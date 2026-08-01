@@ -28,6 +28,7 @@ export function useCreateService() {
     onSuccess: () => {
       toast.success("Service created");
       void queryClient.invalidateQueries({ queryKey: queryKeys.services.all });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.technicians.all });
     },
     onError: (error) => toastApiError(error, "Failed to create service"),
   });
@@ -42,6 +43,7 @@ export function useUpdateService() {
     onSuccess: () => {
       toast.success("Service updated");
       void queryClient.invalidateQueries({ queryKey: queryKeys.services.all });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.technicians.all });
     },
     onError: (error) => toastApiError(error, "Failed to update service"),
   });
@@ -55,6 +57,7 @@ export function useDeleteService() {
     onSuccess: () => {
       toast.success("Service deleted");
       void queryClient.invalidateQueries({ queryKey: queryKeys.services.all });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.technicians.all });
     },
     onError: (error) => toastApiError(error, "Failed to delete service"),
   });
