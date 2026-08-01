@@ -1,6 +1,6 @@
 "use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import { queryKeys } from "@/lib/query-keys";
@@ -16,6 +16,7 @@ export function useServices(filters?: ServiceFilters) {
   return useQuery({
     queryKey: queryKeys.services.list(filters),
     queryFn: () => serviceService.list(filters),
+    placeholderData: keepPreviousData,
   });
 }
 
