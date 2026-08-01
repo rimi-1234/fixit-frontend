@@ -2,92 +2,19 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Star } from "lucide-react";
 
+import { ReviewForm } from "@/app/(dashboardGroup)/dashboard/customer/_components/review-form";
 import { BookingStatusBadge } from "@/components/booking-status-badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
-import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Textarea } from "@/components/ui/textarea";
 import { useBooking, useCancelBooking } from "@/hooks/use-bookings";
-import { useCreateReview } from "@/hooks/use-reviews";
 import type { BookingStatus } from "@/lib/types";
-import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/utils/format-currency";
 import { formatDateTime } from "@/utils/format-date";
 
 const CANCELLABLE: BookingStatus[] = ["REQUESTED", "ACCEPTED", "PAID"];
-
-function ReviewForm({ bookingId }: { bookingId: string }) {
-  const createReview = useCreateReview();
-  const [rating, setRating] = useState(5);
-  const [comment, setComment] = useState("");
-
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    await createReview.mutateAsync({
-      bookingId,
-      rating,
-      comment: comment.trim() || undefined,
-    });
-  }
-
-  return (
-    <form onSubmit={onSubmit} className="space-y-4 border-t border-border/60 pt-6">
-      <div className="space-y-1">
-        <h2 className="text-lg font-semibold tracking-tight">Leave a review</h2>
-        <p className="text-sm text-muted-foreground">
-          Share how the job went so other customers can decide.
-        </p>
-      </div>
-
-      <div className="space-y-2">
-        <Label>Rating</Label>
-        <div className="flex flex-wrap gap-2">
-          {[1, 2, 3, 4, 5].map((value) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => setRating(value)}
-              className={cn(
-                "size-9 rounded-full text-sm font-medium transition-colors",
-                rating === value
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-muted text-muted-foreground hover:text-foreground"
-              )}
-            >
-              {value}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="space-y-1.5">
-        <Label htmlFor="review-comment">Comment (optional)</Label>
-        <Textarea
-          id="review-comment"
-          rows={3}
-          value={comment}
-          onChange={(e) => setComment(e.target.value)}
-          placeholder="Professional, on time, fixed the issue quickly…"
-        />
-      </div>
-
-      <Button type="submit" disabled={createReview.isPending}>
-        {createReview.isPending ? (
-          <>
-            <Loader2 className="animate-spin" aria-hidden="true" />
-            Submitting…
-          </>
-        ) : (
-          "Submit review"
-        )}
-      </Button>
-    </form>
-  );
-}
 
 export function BookingDetailView({ bookingId }: { bookingId: string }) {
   const router = useRouter();
@@ -204,10 +131,18 @@ export function BookingDetailView({ bookingId }: { bookingId: string }) {
       </dl>
 
       {booking.review ? (
-        <div className="space-y-2 rounded-xl bg-muted/40 px-4 py-4">
-          <p className="text-sm font-medium">Your review · {booking.review.rating}/5</p>
+        <div className="space-y-2 border-t border-border/60 pt-6">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-sm font-medium">Your review</p>
+            <span className="inline-flex items-center gap-1 text-sm text-amber-600 dark:text-amber-400">
+              <Star className="size-3.5 fill-current" aria-hidden="true" />
+              {booking.review.rating}/5
+            </span>
+          </div>
           {booking.review.comment ? (
-            <p className="text-sm text-muted-foreground">{booking.review.comment}</p>
+            <p className="text-sm leading-relaxed text-muted-foreground">
+              {booking.review.comment}
+            </p>
           ) : (
             <p className="text-sm text-muted-foreground">No comment left.</p>
           )}
@@ -254,7 +189,12 @@ export function BookingDetailView({ bookingId }: { bookingId: string }) {
         ) : null}
       </div>
 
-      {canReview ? <ReviewForm bookingId={booking.id} /> : null}
+      {canReview ? (
+        <ReviewForm
+          bookingId={booking.id}
+          technicianId={booking.technicianId}
+        />
+      ) : null}
     </div>
   );
 }

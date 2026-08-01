@@ -19,7 +19,10 @@ function bookingAction(booking: Booking) {
     return { href: `/dashboard/customer/bookings/${booking.id}/pay`, label: "Pay now" };
   }
   if (booking.status === "COMPLETED" && !booking.review) {
-    return { href: `/dashboard/customer/bookings/${booking.id}`, label: "Leave review" };
+    return {
+      href: `/dashboard/customer/bookings/${booking.id}#review`,
+      label: "Leave review",
+    };
   }
   return { href: `/dashboard/customer/bookings/${booking.id}`, label: "View" };
 }
@@ -41,6 +44,9 @@ export function CustomerDashboard() {
   ).length;
   const completed = list.filter((b) => b.status === "COMPLETED").length;
   const awaitingPayment = list.filter((b) => b.status === "ACCEPTED").length;
+  const awaitingReview = list.filter(
+    (b) => b.status === "COMPLETED" && !b.review
+  );
   const spent = paymentList
     .filter((p) => p.status === "COMPLETED")
     .reduce((sum, p) => sum + (p.amount || 0), 0);
@@ -70,6 +76,49 @@ export function CustomerDashboard() {
           </>
         )}
       </div>
+
+      {!bookingsLoading && awaitingReview.length > 0 ? (
+        <section className="space-y-3 border-y border-border/60 py-5">
+          <div className="space-y-1">
+            <h2 className="text-lg font-semibold tracking-tight">
+              Awaiting your review
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {awaitingReview.length === 1
+                ? "One completed job is waiting for feedback."
+                : `${awaitingReview.length} completed jobs are waiting for feedback.`}
+            </p>
+          </div>
+          <ul className="space-y-2">
+            {awaitingReview.map((booking) => (
+              <li
+                key={booking.id}
+                className="flex flex-wrap items-center justify-between gap-3"
+              >
+                <div className="min-w-0">
+                  <p className="font-medium tracking-tight">
+                    {booking.service?.name ?? "Service"}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
+                    {booking.technician?.email ?? "Technician"}
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  nativeButton={false}
+                  render={
+                    <Link
+                      href={`/dashboard/customer/bookings/${booking.id}#review`}
+                    />
+                  }
+                >
+                  Leave review
+                </Button>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       <section className="space-y-4">
         <div className="flex flex-wrap items-end justify-between gap-3">

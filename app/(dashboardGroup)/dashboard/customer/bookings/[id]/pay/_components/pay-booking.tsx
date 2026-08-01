@@ -117,7 +117,7 @@ export function PayBookingView({ bookingId }: { bookingId: string }) {
           <BookingStatusBadge status={booking.status} />
         </div>
         <p className="text-sm text-muted-foreground">
-          You'll be redirected to Stripe Checkout to complete payment securely.
+          You&apos;ll be redirected to Stripe Checkout to complete payment securely.
         </p>
       </div>
 
