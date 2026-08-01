@@ -68,6 +68,7 @@ export function BookNowPanel({ technician }: { technician: TechnicianDetail }) {
         scheduledTime: slotIso,
       });
       setSlotIso("");
+      router.push("/dashboard/customer");
     } catch {
       // toast handled in mutation
     }
