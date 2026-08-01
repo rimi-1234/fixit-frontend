@@ -9,24 +9,43 @@
 
 ## 0. Ground rules for you (the agent) — READ FIRST
 
-1. **Do NOT run `git commit` unless I explicitly ask you to in that turn.** Stage/describe
-   changes and tell me what you *would* commit, then wait for my go-ahead. I will say
-   "commit" when I'm ready. This applies to every commit for the rest of the project.
-2. When you do commit (only after I approve), use **Conventional Commits**
-   (`feat:`, `fix:`, `refactor:`, `style:`, `chore:`, `docs:`) with descriptive messages.
-   We need **20 meaningful frontend commits** total, so commit in small logical slices
-   (e.g. "feat: add auth store and login form", not one giant commit).
-3. Never invent backend endpoints, field names, or response shapes. Everything you need is in
+1. **Never run `git add`, `git commit`, or `git push` yourself — not once, for the entire
+   project, under any circumstance, even if I say "looks good," "continue," or "commit."**
+   I am doing 100% of the git add/commit/push and the GitHub push myself, manually, every
+   time. Your job is only to write the code and hand me a commit message to use — never to
+   run the git commands.
+2. **Stop after every module/milestone and wait for me**, instead of ploughing ahead through
+   the whole build in one go. A "module" means things like: project scaffold & theme setup,
+   shared UI primitives, the API client layer (`lib/`), the service layer (`service/*.ts`),
+   the data-fetching hooks layer (`hooks/*.ts`), the auth store + middleware, each individual
+   page/route (e.g. landing page, `/services`, `/technicians/[id]`, login, register, each
+   dashboard page), the payment flow, etc. Use the checklist in Section 14 as your stopping
+   points — do not silently merge multiple checklist items into one turn.
+3. **At every stop, report back to me in this format** before waiting for my next instruction:
+   - What you just built (files touched, in plain language).
+   - How to see/test it (e.g. "run `npm run dev`, open `/services`").
+   - A **suggested commit message** (Conventional Commits style) for me to use when I commit
+     manually, e.g. `feat: add services browse page with filters and skeleton loading`.
+   - Anything you skipped, assumed, or need a decision on.
+4. Do not batch multiple modules' worth of changes into one giant diff just because it's
+   faster — smaller, reviewable stops are required even if it means more turns.
+5. Every suggested commit message must use **Conventional Commits** style (`feat:`, `fix:`,
+   `refactor:`, `style:`, `chore:`, `docs:`) and be scoped to one logical checkpoint, e.g.
+   `feat: add auth store and login form` — never one giant message covering many checkpoints.
+   We need **20+ meaningful frontend commits** total by the end, which the checkpoint list in
+   Section 14 already produces one suggested message per stop.
+6. Never invent backend endpoints, field names, or response shapes. Everything you need is in
    Section 3 (API contract) and Section 4 (data models) below — they were extracted directly
    from the real backend source code, not guessed.
-4. If something genuinely isn't covered by the API (see Section 10, "Known backend gaps"),
+7. If something genuinely isn't covered by the API (see Section 10, "Known backend gaps"),
    handle it gracefully on the frontend (hide the feature, use a sensible client-side
    fallback, or ask me) instead of inventing a fake endpoint.
-5. Follow the folder structure in Section 6 exactly (route groups, `_actions`/`_components`
+8. Follow the folder structure in Section 6 exactly (route groups, `_actions`/`_components`
    per group, shared `service/`/`hooks`/`lib`/`utils`/`components`). Don't invent a different
    layout mid-project.
-6. Build incrementally: scaffold → auth → public pages → customer flow → technician flow →
-   admin flow → payments → polish. Confirm each phase works before moving to the next.
+9. Build incrementally: scaffold → auth → public pages → customer flow → technician flow →
+   admin flow → payments → polish. Confirm each phase works before moving to the next — this
+   is the same list as rule 2, just at the phase level instead of the module level.
 
 ---
 
@@ -603,20 +622,44 @@ Build a **modern, premium SaaS product feel** — not a form-heavy admin templat
 
 ---
 
-## 14. What to build first (suggested order)
+## 14. What to build first — stop after each numbered checkpoint
 
-1. Scaffold: folder structure (Section 6), Tailwind theme tokens, shadcn/ui setup, layout
-   shell, `lib/api-client.ts`, `lib/auth-store.ts`, `sonner` toaster, base UI primitives
-   (Button, Input, Badge, Card, Skeleton, Table) in `components/ui/`.
-2. Auth: `(authGroup)` register (role toggle) + login + `middleware.ts` + `useAuthStore` +
-   `/auth/me` hydration + `AGENTS.md`.
-3. Public: `(publicGroup)` landing page, services browse + filters, technician profile + reviews.
-4. Customer: booking creation flow, customer dashboard, booking detail, payment flow,
-   success/cancel pages, review submission.
-5. Technician: profile form, availability manager, services CRUD, bookings table with status
-   actions.
-6. Admin: users table (ban/unban), categories CRUD, bookings overview, derived stats.
-7. Polish: error boundaries, 404, empty states, responsive pass, dark mode, `API_INTEGRATION.md`.
+Each line below is one **stop point**: finish it, report back per Section 0 rule 3 (what you
+built, how to test it, a suggested commit message), and wait for me before starting the next
+one. Don't skip ahead or combine checkpoints.
 
-Confirm with me after each phase before moving to the next, and remind me when a batch of
-commits is ready so I can review and approve them.
+1. Project scaffold: Tailwind theme tokens, shadcn/ui setup, folder structure (Section 6),
+   root `layout.tsx` with `QueryClientProvider` + `<Toaster/>`, `.env.example`.
+2. Shared UI primitives in `components/ui/` (Button, Input, Badge, Card, Skeleton, Table,
+   Dialog) + shared layout pieces (`navbar.tsx`, `booking-status-badge.tsx`, `empty-state.tsx`).
+3. API client layer: `lib/api-client.ts` (`apiFetch`/`ApiError`), `lib/query-client.ts`.
+4. Service layer: all `service/*.ts` files (one per resource, per Section 6) — plain typed
+   fetch wrappers, no UI yet.
+5. Auth store + session: `lib/auth-store.ts` (Zustand), `hooks/use-auth.ts`, `middleware.ts`
+   for role-based route protection.
+6. Data-fetching hooks layer: `hooks/*.ts` (`use-services`, `use-technicians`, `use-bookings`,
+   `use-payments`, `use-admin`) wrapping the service layer in `useQuery`/`useMutation`.
+7. `(authGroup)`: register page (role toggle) + login page, wired to the auth store.
+8. `(publicGroup)`: landing page (`/`).
+9. `(publicGroup)`: services browse page (`/services`) with filters + skeleton loading.
+10. `(publicGroup)`: technician profile page (`/technicians/[id]`) with reviews + Book Now.
+11. Customer: booking creation flow (from technician profile → `POST /bookings`).
+12. Customer dashboard: overview page + booking list with status badges.
+13. Customer: booking detail page (cancel action, status-aware actions).
+14. Payment flow: pay page → Stripe redirect → `/payment/success` + `/payment/cancel` pages.
+15. Customer: review submission on completed bookings.
+16. Technician dashboard: overview page.
+17. Technician: profile management page (skills/experience/rate/bio/location).
+18. Technician: availability manager page.
+19. Technician: services CRUD page.
+20. Technician: bookings management table (Accept/Decline/Start/Complete actions).
+21. Admin dashboard: overview page with derived stats.
+22. Admin: users table (search/filter, ban/unban).
+23. Admin: categories CRUD page.
+24. Admin: global bookings table.
+25. Polish pass: error boundaries (`error.tsx`), 404 (`not-found.tsx`), empty states,
+    responsive pass at 375px/768px/1280px, dark mode toggle (bonus), final
+    `API_INTEGRATION.md` and `AGENTS.md`.
+
+This naturally produces well more than 20 reviewable, committable checkpoints — matching the
+20-commit requirement without you ever needing to guess how to group changes.
