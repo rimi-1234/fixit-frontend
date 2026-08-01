@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/use-auth";
+import { dashboardPathForRole } from "@/lib/auth-token";
 
 export default function DashboardError({
   error,
@@ -12,7 +14,8 @@ export default function DashboardError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  const router = useRouter();
+  const { role } = useAuth();
+  const dashboardHref = role ? dashboardPathForRole(role) : "/";
 
   useEffect(() => {
     console.error(error);
@@ -24,9 +27,13 @@ export default function DashboardError({
       <p className="text-sm text-muted-foreground">
         {error.message || "This dashboard view failed to load."}
       </p>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <Button onClick={reset}>Try again</Button>
-        <Button variant="outline" onClick={() => router.push("/dashboard/customer")}>
+        <Button
+          variant="outline"
+          nativeButton={false}
+          render={<Link href={dashboardHref} />}
+        >
           Back to dashboard
         </Button>
       </div>

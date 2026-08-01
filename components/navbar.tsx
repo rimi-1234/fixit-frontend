@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/use-auth";
 import { dashboardPathForRole } from "@/lib/auth-token";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 const NAV_LINKS = [{ href: "/services", label: "Services" }];
 
@@ -48,6 +49,7 @@ export function Navbar() {
         </nav>
 
         <div className="hidden items-center gap-2 md:flex">
+          <ThemeToggle />
           {!isHydrated ? (
             <div className="h-8 w-28 animate-pulse rounded-md bg-muted" />
           ) : isAuthenticated ? (
@@ -81,6 +83,7 @@ export function Navbar() {
         </div>
 
         <Sheet>
+          <ThemeToggle className="md:hidden" />
           <SheetTrigger
             render={
               <Button variant="ghost" size="icon" className="md:hidden" />
@@ -115,6 +118,10 @@ export function Navbar() {
               ) : null}
             </nav>
             <div className="mt-auto flex flex-col gap-2 border-t border-border/60 p-4">
+              <div className="flex items-center justify-between px-1">
+                <span className="text-sm text-muted-foreground">Theme</span>
+                <ThemeToggle />
+              </div>
               {isAuthenticated ? (
                 <Button variant="outline" onClick={logout}>
                   Log out

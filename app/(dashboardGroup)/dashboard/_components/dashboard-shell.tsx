@@ -24,6 +24,7 @@ import {
 import { useAuth } from "@/hooks/use-auth";
 import type { Role } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 type NavItem = {
   href: string;
@@ -159,6 +160,7 @@ export function DashboardTopbar() {
       </div>
 
       <div className="ml-auto flex items-center gap-3">
+        <ThemeToggle />
         <Link
           href="/services"
           className={cn(
