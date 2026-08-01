@@ -1,13 +1,7 @@
 import { cn } from "@/lib/utils";
+import type { BookingStatus } from "@/lib/types";
 
-export type BookingStatus =
-  | "REQUESTED"
-  | "ACCEPTED"
-  | "DECLINED"
-  | "PAID"
-  | "IN_PROGRESS"
-  | "COMPLETED"
-  | "CANCELLED";
+export type { BookingStatus };
 
 const STATUS_STYLES: Record<BookingStatus, { label: string; className: string }> = {
   REQUESTED: {
