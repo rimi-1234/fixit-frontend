@@ -142,3 +142,33 @@ export interface LoginResult {
   accessToken: string;
   user: AuthUser;
 }
+
+/** Public technician list/card shape from GET /technicians */
+export interface TechnicianSummary {
+  id: string;
+  email: string;
+  status: UserStatus;
+  createdAt: string;
+  technicianProfile: TechnicianProfile | null;
+  services: Service[];
+  averageRating: number;
+  reviewCount: number;
+}
+
+/** Public technician detail from GET /technicians/:id */
+export interface TechnicianDetail extends Omit<TechnicianSummary, "services"> {
+  services: Service[];
+  reviews: Array<
+    Review & {
+      customer: { id: string; email: string };
+      booking: { id: string; service: Service };
+    }
+  >;
+}
+
+export interface CreatePaymentResult {
+  provider: PaymentProvider;
+  gatewayUrl: string;
+  sessionId?: string;
+  payment: Payment;
+}
