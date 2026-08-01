@@ -3,8 +3,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
+import { useAuthStore } from "@/lib/auth-store";
 import type { Booking } from "@/lib/types";
 import { queryKeys } from "@/lib/query-keys";
+import { authService } from "@/service/auth.service";
 import {
   technicianService,
   type TechnicianBookingActionStatus,
@@ -37,13 +39,20 @@ export function useTechnicianBookings() {
 
 export function useUpdateTechnicianProfile() {
   const queryClient = useQueryClient();
+  const setUser = useAuthStore((s) => s.setUser);
 
   return useMutation({
     mutationFn: (payload: UpdateTechnicianProfilePayload) =>
       technicianService.updateProfile(payload),
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success("Profile updated");
       void queryClient.invalidateQueries({ queryKey: queryKeys.technicians.all });
+      try {
+        const me = await authService.me();
+        setUser(me);
+      } catch {
+        // Keep existing session if /auth/me briefly fails
+      }
     },
     onError: (error) => toastApiError(error, "Failed to update profile"),
   });
