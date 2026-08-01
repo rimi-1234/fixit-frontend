@@ -1,36 +1,83 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# FixItNow Web
 
-## Getting Started
+Next.js frontend for **FixItNow** — a home-services marketplace. Customers browse and book technicians, pay with Stripe Checkout, and leave reviews. Technicians manage profile, availability, services, and jobs. Admins moderate users, categories, and bookings.
 
-First, run the development server:
+Backend: FixItNowPro (Express + Prisma). Live API example: `https://fix-it-now-two.vercel.app/api`
+
+## Stack
+
+- Next.js 16 (App Router) · React 19 · Tailwind CSS v4 · shadcn/ui (Base UI)
+- TanStack Query · Zustand · React Hook Form + Zod · sonner · next-themes
+
+## Setup
 
 ```bash
+npm install
+cp .env.example .env.local
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Environment
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Variable | Purpose |
+|---|---|
+| `NEXT_PUBLIC_API_URL` | Backend API base (no trailing slash). Local: `http://localhost:5000/api` |
+| `NEXT_PUBLIC_APP_URL` | This app’s public URL. Must match the backend `FRONTEND_URL` so Stripe redirects return here |
+| `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | Optional — Checkout redirect does not require it |
 
-## Learn More
+Point `NEXT_PUBLIC_API_URL` at a running FixItNowPro instance (local or deployed).
 
-To learn more about Next.js, take a look at the following resources:
+## Seed accounts
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+| Role | Email | Password |
+|---|---|---|
+| Admin | `admin@fixitnow.com` | `Admin@1234` |
+| Technician | `technician@fixitnow.com` | `tech123` |
+| Customer | `customer@fixitnow.com` | `customer123` |
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Demo flow (grading)
 
-## Deploy on Vercel
+1. **Customer** — log in → `/services` → open a technician → Book Now → dashboard
+2. **Technician** — Accept booking → wait for payment → Start job → Mark completed
+3. **Customer** — Pay Now (Stripe test card `4242 4242 4242 4242`) → return `/payment/success` → Leave review when completed
+4. **Admin** — `/dashboard/admin` stats → Users (ban/unban) → Categories CRUD → Bookings filter
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Role dashboards
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+| Role | Root |
+|---|---|
+| Customer | `/dashboard/customer` |
+| Technician | `/dashboard/technician` |
+| Admin | `/dashboard/admin` |
+
+Middleware enforces role segments on `/dashboard/*`.
+
+## Scripts
+
+```bash
+npm run dev      # development
+npm run build    # production build
+npm run start    # serve build
+npm run lint     # ESLint
+```
+
+## Docs
+
+- [`API_INTEGRATION.md`](./API_INTEGRATION.md) — page ↔ endpoint map
+- [`AGENTS.md`](./AGENTS.md) — conventions for future agent sessions
+- [`AI_BUILD_PROMPT.md`](./AI_BUILD_PROMPT.md) — full product/build specification
+
+## Project layout (high level)
+
+```
+app/
+  (authGroup)/       login, register
+  (publicGroup)/     landing, services, technicians, payment return
+  (dashboardGroup)/  customer, technician, admin panels
+components/          shared UI (navbar, badges, theme toggle, shadcn)
+hooks/               TanStack Query hooks
+service/             typed API wrappers
+lib/                 api client, auth store, types, query keys
+```
