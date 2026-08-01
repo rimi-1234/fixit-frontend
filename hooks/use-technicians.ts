@@ -60,13 +60,20 @@ export function useUpdateTechnicianProfile() {
 
 export function useUpdateAvailability() {
   const queryClient = useQueryClient();
+  const setUser = useAuthStore((s) => s.setUser);
 
   return useMutation({
     mutationFn: (availability: string[]) =>
       technicianService.updateAvailability(availability),
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success("Availability saved");
       void queryClient.invalidateQueries({ queryKey: queryKeys.technicians.all });
+      try {
+        const me = await authService.me();
+        setUser(me);
+      } catch {
+        // Keep existing session if /auth/me briefly fails
+      }
     },
     onError: (error) => toastApiError(error, "Failed to save availability"),
   });

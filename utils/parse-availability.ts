@@ -121,3 +121,22 @@ export function weekdayNameFromIsoDate(dateIso: string): string {
   if (Number.isNaN(date.getTime())) return "";
   return WEEKDAYS[date.getDay()];
 }
+
+export function formatAvailabilitySlot(
+  weekday: Weekday,
+  startMinutes: number,
+  endMinutes: number
+): string {
+  return `${weekday} ${formatMinutesCompact(startMinutes)}-${formatMinutesCompact(endMinutes)}`;
+}
+
+function formatMinutesCompact(total: number): string {
+  const h24 = Math.floor(total / 60);
+  const m = total % 60;
+  const meridiem = h24 >= 12 ? "PM" : "AM";
+  const h12 = h24 % 12 === 0 ? 12 : h24 % 12;
+  if (m === 0) return `${h12}${meridiem}`;
+  return `${h12}:${m.toString().padStart(2, "0")}${meridiem}`;
+}
+
+export { WEEKDAYS };
