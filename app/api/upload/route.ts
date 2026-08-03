@@ -15,6 +15,15 @@ function extFor(mime: string) {
   return "jpg";
 }
 
+function toDataUrl(mime: string, bytes: Buffer) {
+  return `data:${mime};base64,${bytes.toString("base64")}`;
+}
+
+/** Vercel (and similar) cannot serve files written at runtime under /public. */
+function canPersistToPublic() {
+  return !process.env.VERCEL && process.env.NODE_ENV !== "production";
+}
+
 export async function POST(request: Request) {
   try {
     const form = await request.formData();
@@ -40,27 +49,30 @@ export async function POST(request: Request) {
     }
 
     const bytes = Buffer.from(await file.arrayBuffer());
-    const name = `${randomUUID()}.${extFor(mime)}`;
 
-    // Prefer a public URL when the filesystem is writable (local / persistent disk).
-    try {
-      const dir = path.join(process.cwd(), "public", "uploads");
-      await mkdir(dir, { recursive: true });
-      await writeFile(path.join(dir, name), bytes);
-      return NextResponse.json({
-        url: `/uploads/${name}`,
-        bytes: bytes.length,
-        storage: "disk",
-      });
-    } catch {
-      // Serverless / read-only FS: store as a compact data URL on the record.
-      const url = `data:${mime};base64,${bytes.toString("base64")}`;
-      return NextResponse.json({
-        url,
-        bytes: bytes.length,
-        storage: "inline",
-      });
+    // Local dev only: write into public/uploads so URLs stay short.
+    // On Vercel, runtime writes are not served — always return an inline data URL.
+    if (canPersistToPublic()) {
+      try {
+        const name = `${randomUUID()}.${extFor(mime)}`;
+        const dir = path.join(process.cwd(), "public", "uploads");
+        await mkdir(dir, { recursive: true });
+        await writeFile(path.join(dir, name), bytes);
+        return NextResponse.json({
+          url: `/uploads/${name}`,
+          bytes: bytes.length,
+          storage: "disk",
+        });
+      } catch {
+        // fall through to inline
+      }
     }
+
+    return NextResponse.json({
+      url: toDataUrl(mime, bytes),
+      bytes: bytes.length,
+      storage: "inline",
+    });
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Unexpected upload error";

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Users } from "lucide-react";
 
 import {
@@ -16,13 +16,15 @@ import { Label } from "@/components/ui/label";
 import { RevealGroup, RevealItem } from "@/components/motion/reveal";
 import { useTechnicians } from "@/hooks/use-technicians";
 import type { TechnicianFilters } from "@/service/technician.service";
+import { applyTechnicianFilters } from "@/utils/apply-technician-filters";
 
-export function TechniciansBrowse() {
-  const [skill, setSkill] = useState("");
-  const [location, setLocation] = useState("");
-  const [minRating, setMinRating] = useState("");
-
-  const filters = useMemo<TechnicianFilters>(() => {
+function useDebouncedTechnicianFilters(
+  skill: string,
+  location: string,
+  minRating: string,
+  delayMs = 250
+): TechnicianFilters {
+  const draft = useMemo(() => {
     const next: TechnicianFilters = {};
     if (skill.trim()) next.skill = skill.trim();
     if (location.trim()) next.location = location.trim();
@@ -30,12 +32,32 @@ export function TechniciansBrowse() {
     return next;
   }, [skill, location, minRating]);
 
-  const { data, isLoading, isError, isFetching, refetch } =
-    useTechnicians(filters);
+  const [filters, setFilters] = useState(draft);
 
-  const technicians = [...(data ?? [])].sort(
-    (a, b) => (b.averageRating || 0) - (a.averageRating || 0)
-  );
+  useEffect(() => {
+    const timer = window.setTimeout(() => setFilters(draft), delayMs);
+    return () => window.clearTimeout(timer);
+  }, [draft, delayMs]);
+
+  return filters;
+}
+
+export function TechniciansBrowse() {
+  const [skill, setSkill] = useState("");
+  const [location, setLocation] = useState("");
+  const [minRating, setMinRating] = useState("");
+
+  const filters = useDebouncedTechnicianFilters(skill, location, minRating);
+
+  // Load the full list, then filter in the UI so skill matching is partial + case-insensitive
+  // even when a deployed API still uses exact Prisma `has`.
+  const { data, isLoading, isError, isFetching, refetch } = useTechnicians();
+
+  const technicians = useMemo(() => {
+    return applyTechnicianFilters(data ?? [], filters).sort(
+      (a, b) => (b.averageRating || 0) - (a.averageRating || 0)
+    );
+  }, [data, filters]);
 
   const hasFilters = Boolean(skill || location || minRating);
 
@@ -59,7 +81,7 @@ export function TechniciansBrowse() {
               id="tech-skill"
               value={skill}
               onChange={(e) => setSkill(e.target.value)}
-              placeholder="Plumbing"
+              placeholder="Plumbing, Electrical…"
               className="h-11"
             />
           </div>

@@ -1,4 +1,5 @@
 import { avatarFromString } from "@/utils/get-initials";
+import { isEphemeralUploadPath } from "@/utils/service-images";
 
 /** Built-in portrait options for technician profiles. */
 export const TECHNICIAN_AVATAR_PRESETS = [
@@ -16,6 +17,6 @@ export function technicianImageUrl(input: {
   technicianProfile?: { imageUrl?: string | null } | null;
 }) {
   const custom = input.technicianProfile?.imageUrl?.trim();
-  if (custom) return custom;
+  if (custom && !isEphemeralUploadPath(custom)) return custom;
   return avatarFromString(input.id || input.email || "technician");
 }
