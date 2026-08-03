@@ -104,9 +104,15 @@ export function BookNowPanel({ technician }: { technician: TechnicianDetail }) {
   const [slotIso, setSlotIso] = useState("");
 
   const slots = useMemo(
-    () => getTimeSlotsForDate(date, availability),
-    [date, availability]
+    () =>
+      getTimeSlotsForDate(date, availability, {
+        bookedTimes: (technician.bookedSlots ?? []).map((slot) => slot.scheduledTime),
+      }),
+    [date, availability, technician.bookedSlots]
   );
+
+  const availableCount = slots.filter((slot) => slot.state === "available").length;
+  const bookedCount = slots.filter((slot) => slot.state === "booked").length;
 
   const selectedService = services.find((s) => s.id === serviceId);
   const weekday = weekdayNameFromIsoDate(date);
@@ -150,7 +156,13 @@ export function BookNowPanel({ technician }: { technician: TechnicianDetail }) {
 
   function goNextFromTime() {
     if (!slotIso) {
-      toast.error("Choose a time slot to continue");
+      toast.error("Choose an available time slot to continue");
+      return;
+    }
+    const chosen = slots.find((slot) => slot.iso === slotIso);
+    if (chosen && chosen.state !== "available") {
+      toast.error("That slot is booked. Pick an available time.");
+      setSlotIso("");
       return;
     }
     setStep(3);
@@ -241,24 +253,58 @@ export function BookNowPanel({ technician }: { technician: TechnicianDetail }) {
           </div>
 
           <div className="space-y-2">
-            <Label>Time slot {weekday ? `· ${weekday}` : ""}</Label>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <Label>Time slot {weekday ? `· ${weekday}` : ""}</Label>
+              {slots.length > 0 ? (
+                <div className="flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="size-2 rounded-full bg-success" />
+                    Available ({availableCount})
+                  </span>
+                  <span className="inline-flex items-center gap-1.5">
+                    <span className="size-2 rounded-full bg-muted-foreground/50" />
+                    Booked ({bookedCount})
+                  </span>
+                </div>
+              ) : null}
+            </div>
             {slots.length > 0 ? (
               <div className="flex flex-wrap gap-2">
                 {slots.map((slot) => {
                   const selected = slotIso === slot.iso;
+                  const disabled = slot.state !== "available";
                   return (
                     <button
                       key={slot.iso}
                       type="button"
-                      onClick={() => setSlotIso(slot.iso)}
+                      disabled={disabled}
+                      aria-disabled={disabled}
+                      title={
+                        slot.state === "booked"
+                          ? "Already booked"
+                          : slot.state === "past"
+                            ? "This time has passed"
+                            : undefined
+                      }
+                      onClick={() => {
+                        if (disabled) return;
+                        setSlotIso(slot.iso);
+                      }}
                       className={cn(
                         "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
-                        selected
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-muted text-muted-foreground hover:bg-accent hover:text-primary"
+                        selected &&
+                          "bg-primary text-primary-foreground ring-2 ring-primary/30 ring-offset-2 ring-offset-background",
+                        !selected &&
+                          slot.state === "available" &&
+                          "bg-success/15 text-success hover:bg-success/25",
+                        slot.state === "booked" &&
+                          "cursor-not-allowed bg-muted text-muted-foreground/70 line-through opacity-70",
+                        slot.state === "past" &&
+                          "cursor-not-allowed bg-muted/60 text-muted-foreground/50 opacity-60"
                       )}
                     >
                       {slot.label}
+                      {slot.state === "booked" ? " · booked" : ""}
                     </button>
                   );
                 })}
@@ -272,6 +318,11 @@ export function BookNowPanel({ technician }: { technician: TechnicianDetail }) {
                 No structured availability yet. Pick any date and continue once a slot is set.
               </p>
             )}
+            {slots.length > 0 && availableCount === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                All slots for this day are booked or in the past. Choose another date.
+              </p>
+            ) : null}
           </div>
 
           {(parsed.length > 0 || unparsed.length > 0) && (
@@ -303,7 +354,10 @@ export function BookNowPanel({ technician }: { technician: TechnicianDetail }) {
               className="flex-1 rounded-full"
               size="lg"
               onClick={goNextFromTime}
-              disabled={slots.length > 0 && !slotIso}
+              disabled={
+                (slots.length > 0 && !slotIso) ||
+                (slots.length > 0 && availableCount === 0)
+              }
             >
               Continue
             </Button>

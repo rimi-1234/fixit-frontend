@@ -137,7 +137,7 @@ export function CustomerReviewsPage() {
         )}
       </RevealGroup>
 
-      <div className="grid gap-4 lg:grid-cols-[1.05fr_0.95fr]">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-[1.05fr_0.95fr]">
         <Reveal className="rounded-[1.5rem] border border-border/60 bg-card/80 p-5 shadow-sm sm:p-6">
           <div className="mb-5 space-y-1">
             <h3 className="text-base font-semibold tracking-tight sm:text-lg">

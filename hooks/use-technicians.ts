@@ -124,6 +124,7 @@ export function useUpdateTechnicianBookingStatus() {
         queryKey: queryKeys.technicians.bookings,
       });
       void queryClient.invalidateQueries({ queryKey: queryKeys.bookings.all });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.technicians.all });
     },
   });
 }

@@ -10,6 +10,7 @@ import { EmptyState } from "@/components/empty-state";
 import { Reveal, RevealGroup, RevealItem } from "@/components/motion/reveal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCancelBooking, useMyBookings } from "@/hooks/use-bookings";
+import { useBookingStatusToasts } from "@/hooks/use-booking-status-toasts";
 import type { Booking, BookingStatus } from "@/lib/types";
 import { formatCurrency } from "@/utils/format-currency";
 import { formatDateTime } from "@/utils/format-date";
@@ -31,6 +32,7 @@ function bookingAction(booking: Booking) {
 }
 
 export function CustomerBookingsPage() {
+  useBookingStatusToasts(true);
   const { data, isLoading, isError, refetch } = useMyBookings();
   const cancelBooking = useCancelBooking();
   const list = data ?? [];

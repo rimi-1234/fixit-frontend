@@ -124,7 +124,7 @@ export function AdminBookingsTable() {
             {isFetching ? " · refreshing…" : ""}
           </p>
 
-          <ul className="divide-y divide-border/60 md:hidden">
+          <ul className="divide-y divide-border/60 lg:hidden">
             {bookings.map((booking) => (
               <li key={booking.id} className="space-y-2 py-4">
                 <div className="flex flex-wrap items-center gap-2">
@@ -152,7 +152,7 @@ export function AdminBookingsTable() {
             ))}
           </ul>
 
-          <div className="hidden md:block">
+          <div className="hidden overflow-x-auto lg:block">
             <Table>
               <TableHeader>
                 <TableRow>

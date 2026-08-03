@@ -56,12 +56,12 @@ const JOURNEY = [
 export function BookingJourney() {
   return (
     <section id="journey" className="scroll-mt-24 overflow-hidden bg-muted/30">
-      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-16 sm:px-6 sm:py-20 lg:grid-cols-[0.85fr_1.15fr] lg:gap-14">
+      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-16 sm:px-6 sm:py-20 md:grid-cols-[0.85fr_1.15fr] md:gap-12 lg:gap-14">
         <Reveal className="relative space-y-5">
           <Float
             distance={16}
             duration={7}
-            className="pointer-events-none absolute -right-6 -top-4 hidden size-28 overflow-hidden rounded-2xl shadow-lg lg:block"
+            className="pointer-events-none absolute -right-6 -top-4 hidden size-28 overflow-hidden rounded-2xl shadow-lg md:block"
           >
             <Image
               src="https://images.unsplash.com/photo-1504148455328-c376907d081c?auto=format&fit=crop&w=400&q=80"
@@ -109,7 +109,7 @@ export function BookingJourney() {
             distance={10}
             duration={6}
             delay={0.4}
-            className="pointer-events-none absolute -bottom-8 -right-6 hidden size-24 overflow-hidden rounded-2xl opacity-90 shadow-md lg:block"
+            className="pointer-events-none absolute -bottom-8 -right-6 hidden size-24 overflow-hidden rounded-2xl opacity-90 shadow-md md:block"
           >
             <Image
               src="https://images.unsplash.com/photo-1607472586893-edb57bdc0e39?auto=format&fit=crop&w=400&q=80"
@@ -134,13 +134,13 @@ export function BookingJourney() {
             </span>
           </div>
 
-          <RevealGroup className="grid gap-6 sm:grid-cols-5 sm:gap-3">
+          <RevealGroup className="grid gap-6 sm:grid-cols-2 lg:grid-cols-5 lg:gap-3">
             {JOURNEY.map((step, index) => (
               <RevealItem key={step.status} className="relative space-y-3">
                 {index < JOURNEY.length - 1 ? (
                   <span
                     aria-hidden="true"
-                    className="absolute top-5 left-[calc(50%+1.25rem)] hidden h-px w-[calc(100%-0.5rem)] bg-border sm:block"
+                    className="absolute top-5 left-[calc(50%+1.25rem)] hidden h-px w-[calc(100%-0.5rem)] bg-border lg:block"
                   />
                 ) : null}
                 <Float distance={5} duration={4 + index * 0.2} delay={index * 0.15}>

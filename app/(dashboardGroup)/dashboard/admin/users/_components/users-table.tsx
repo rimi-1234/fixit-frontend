@@ -253,7 +253,7 @@ export function AdminUsersTable() {
           </p>
 
           {/* Mobile */}
-          <ul className="divide-y divide-border/60 md:hidden">
+          <ul className="divide-y divide-border/60 lg:hidden">
             {pagedUsers.map((user) => {
               const busy = pendingId === user.id;
               return (
@@ -293,7 +293,7 @@ export function AdminUsersTable() {
           </ul>
 
           {/* Desktop */}
-          <div className="hidden md:block">
+          <div className="hidden overflow-x-auto lg:block">
             <Table>
               <TableHeader>
                 <TableRow>

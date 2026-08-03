@@ -198,8 +198,9 @@ export function AvailabilityManager() {
           Availability
         </h1>
         <p className="text-sm text-muted-foreground">
-          Interactive weekly scheduler — click a day, set hours, and save. Book Now
-          only offers times inside these windows.
+          Click a weekday below to select it, choose start/end times, then tap{" "}
+          <span className="font-medium text-foreground">Add slot</span>. Days with
+          blocks show in green. Book Now only offers times inside these windows.
         </p>
       </div>
 

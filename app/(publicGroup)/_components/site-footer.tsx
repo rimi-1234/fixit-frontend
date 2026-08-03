@@ -21,7 +21,7 @@ const ACCOUNT = [
 export function SiteFooter() {
   return (
     <footer id="about" className="scroll-mt-24 border-t border-border/60 bg-muted/25">
-      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 lg:grid-cols-[1.2fr_repeat(3,0.7fr)]">
+      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:grid-cols-2 sm:px-6 sm:py-14 lg:grid-cols-[1.2fr_repeat(3,0.7fr)] lg:gap-10">
         <div className="space-y-4">
           <Link href="/" className="inline-flex items-center gap-2 font-semibold tracking-tight">
             <span className="inline-flex size-7 items-center justify-center rounded-md bg-primary text-primary-foreground">

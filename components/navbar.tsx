@@ -65,18 +65,19 @@ export function Navbar() {
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4 sm:px-6">
         <Link
           href="/"
-          className="flex shrink-0 items-center gap-2 font-semibold tracking-tight"
+          className="flex min-w-0 shrink-0 items-center gap-2 font-semibold tracking-tight"
           onClick={() => setHash("")}
         >
-          <span className="inline-flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+          <span className="inline-flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <Wrench aria-hidden="true" className="size-4" />
           </span>
-          <span>FixItNow</span>
+          <span className="truncate">FixItNow</span>
         </Link>
 
+        {/* Desktop only — tablet uses the sheet to avoid cramped nav */}
         <nav
           aria-label="Primary"
-          className="hidden items-center rounded-full border border-border/70 bg-card/90 p-1 shadow-sm md:flex"
+          className="hidden items-center rounded-full border border-border/70 bg-card/90 p-1 shadow-sm lg:flex"
         >
           {NAV_LINKS.map((link) => {
             const showActive = activeId === link.id;
@@ -112,7 +113,7 @@ export function Navbar() {
           })}
         </nav>
 
-        <div className="hidden items-center gap-2 md:flex">
+        <div className="hidden items-center gap-2 lg:flex">
           <ThemeToggle />
           {!isHydrated ? (
             <div className="h-8 w-36 animate-pulse rounded-full bg-muted" />
@@ -126,7 +127,7 @@ export function Navbar() {
                 <LayoutDashboard aria-hidden="true" />
                 Dashboard
               </Button>
-              <span className="max-w-[9rem] truncate text-sm text-muted-foreground">
+              <span className="hidden max-w-[10rem] truncate text-sm text-muted-foreground xl:inline">
                 {user?.email ?? "Signed in"}
               </span>
               <Button variant="outline" onClick={logout}>
@@ -151,8 +152,20 @@ export function Navbar() {
           )}
         </div>
 
-        <div className="flex items-center gap-1 md:hidden">
+        <div className="flex items-center gap-1 lg:hidden">
           <ThemeToggle />
+          {isHydrated && isAuthenticated ? (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="hidden sm:inline-flex"
+              nativeButton={false}
+              render={<Link href={dashboardHref} />}
+              aria-label="Dashboard"
+            >
+              <LayoutDashboard aria-hidden="true" />
+            </Button>
+          ) : null}
           <Sheet>
             <SheetTrigger
               render={<Button variant="ghost" size="icon" />}
@@ -160,9 +173,23 @@ export function Navbar() {
               <Menu aria-hidden="true" />
               <span className="sr-only">Open menu</span>
             </SheetTrigger>
-            <SheetContent side="right">
+            <SheetContent side="right" className="w-[min(20rem,88vw)] sm:max-w-sm">
               <SheetHeader>
-                <SheetTitle>Menu</SheetTitle>
+                <SheetTitle className="sr-only">Menu</SheetTitle>
+                <SheetClose
+                  nativeButton={false}
+                  render={
+                    <Link
+                      href="/"
+                      className="flex items-center gap-2 font-semibold tracking-tight"
+                    />
+                  }
+                >
+                  <span className="inline-flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                    <Wrench aria-hidden="true" className="size-4" />
+                  </span>
+                  FixItNow
+                </SheetClose>
               </SheetHeader>
               <nav className="flex flex-col gap-1 px-4">
                 {NAV_LINKS.map((link) => {

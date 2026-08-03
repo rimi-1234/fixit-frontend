@@ -166,6 +166,12 @@ export interface TechnicianDetail extends Omit<TechnicianSummary, "services"> {
       booking: { id: string; service: Service };
     }
   >;
+  /** Active holds used by the book-now slot picker (no customer PII). */
+  bookedSlots?: Array<{
+    id: string;
+    scheduledTime: string;
+    status: BookingStatus;
+  }>;
 }
 
 export interface CreatePaymentResult {

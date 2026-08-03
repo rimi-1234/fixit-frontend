@@ -43,7 +43,7 @@ const STEPS = [
 export function HowItWorks() {
   return (
     <section id="how-it-works" className="scroll-mt-24">
-      <div className="mx-auto grid max-w-6xl gap-12 px-4 py-16 sm:px-6 sm:py-20 lg:grid-cols-[0.95fr_1.05fr] lg:gap-16">
+      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-16 sm:px-6 sm:py-20 md:grid-cols-[0.95fr_1.05fr] md:gap-12 lg:gap-16">
         <Reveal className="space-y-6">
           <p className="text-xs font-semibold tracking-[0.18em] text-primary uppercase">
             Built around the real workflow
@@ -63,12 +63,12 @@ export function HowItWorks() {
             </p>
           </div>
 
-          <Float distance={12} duration={6.5} className="relative mt-2 hidden aspect-[4/3] overflow-hidden rounded-2xl lg:block">
+          <Float distance={12} duration={6.5} className="relative mt-2 hidden aspect-[4/3] overflow-hidden rounded-2xl md:block">
             <Image
               src="https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=1200&q=80"
               alt="Professional completing a home service"
               fill
-              sizes="40vw"
+              sizes="(min-width: 768px) 40vw, 100vw"
               className="object-cover"
             />
           </Float>

@@ -24,6 +24,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import { useMyBookings } from "@/hooks/use-bookings";
+import { useBookingStatusToasts } from "@/hooks/use-booking-status-toasts";
 import { useMyPayments } from "@/hooks/use-payments";
 import type { Booking } from "@/lib/types";
 import { formatCurrency } from "@/utils/format-currency";
@@ -46,6 +47,7 @@ const ACTIVE_STATUSES = new Set(["REQUESTED", "ACCEPTED", "PAID", "IN_PROGRESS"]
 
 export function CustomerDashboard() {
   const { user } = useAuth();
+  useBookingStatusToasts(true);
   const {
     data: bookings,
     isLoading: bookingsLoading,
@@ -177,7 +179,7 @@ export function CustomerDashboard() {
         )}
       </RevealGroup>
 
-      <div className="grid gap-4 lg:grid-cols-[1.2fr_0.8fr]">
+      <div className="grid gap-4 md:grid-cols-[1.2fr_0.8fr]">
         <Reveal className="rounded-2xl border border-border/60 bg-card p-5 shadow-sm sm:p-6">
           <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
             <div className="space-y-1">

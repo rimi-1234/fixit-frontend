@@ -68,14 +68,33 @@ export function parseAvailabilityList(availability: string[] | undefined | null)
   return { parsed, unparsed };
 }
 
+export type SlotAvailability = "available" | "booked" | "past";
+
+export type TimeSlotOption = {
+  label: string;
+  minutes: number;
+  iso: string;
+  state: SlotAvailability;
+};
+
+function hourKey(iso: string) {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "";
+  return `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}-${date.getHours()}`;
+}
+
 /** Hourly time labels for a given calendar date, based on availability strings. */
 export function getTimeSlotsForDate(
   dateIso: string,
   availability: string[] | undefined | null,
-  stepMinutes = 60
-): { label: string; minutes: number; iso: string }[] {
+  options?: {
+    stepMinutes?: number;
+    bookedTimes?: Array<string | Date>;
+  }
+): TimeSlotOption[] {
   if (!dateIso) return [];
 
+  const stepMinutes = options?.stepMinutes ?? 60;
   const date = new Date(`${dateIso}T12:00:00`);
   if (Number.isNaN(date.getTime())) return [];
 
@@ -85,7 +104,14 @@ export function getTimeSlotsForDate(
 
   if (daySlots.length === 0) return [];
 
-  const labels: { label: string; minutes: number; iso: string }[] = [];
+  const bookedKeys = new Set(
+    (options?.bookedTimes ?? [])
+      .map((value) => hourKey(typeof value === "string" ? value : value.toISOString()))
+      .filter(Boolean)
+  );
+
+  const now = Date.now();
+  const labels: TimeSlotOption[] = [];
 
   for (const slot of daySlots) {
     for (
@@ -95,7 +121,7 @@ export function getTimeSlotsForDate(
     ) {
       const hours = Math.floor(minutes / 60);
       const mins = minutes % 60;
-      const iso = new Date(
+      const slotDate = new Date(
         date.getFullYear(),
         date.getMonth(),
         date.getDate(),
@@ -103,12 +129,19 @@ export function getTimeSlotsForDate(
         mins,
         0,
         0
-      ).toISOString();
+      );
+      const iso = slotDate.toISOString();
+      const key = hourKey(iso);
+
+      let state: SlotAvailability = "available";
+      if (slotDate.getTime() < now) state = "past";
+      else if (bookedKeys.has(key)) state = "booked";
 
       labels.push({
         label: formatMinutes(minutes),
         minutes,
         iso,
+        state,
       });
     }
   }

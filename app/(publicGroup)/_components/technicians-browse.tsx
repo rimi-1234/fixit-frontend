@@ -74,8 +74,8 @@ export function TechniciansBrowse() {
           </p>
         </div>
 
-        <div className="mb-10 grid gap-3 rounded-2xl border border-border/60 bg-card/40 p-4 sm:grid-cols-4 sm:p-5">
-          <div className="space-y-1.5 sm:col-span-1">
+        <div className="mb-10 grid gap-3 rounded-2xl border border-border/60 bg-card/40 p-4 sm:grid-cols-2 sm:p-5 lg:grid-cols-4">
+          <div className="space-y-1.5">
             <Label htmlFor="tech-skill">Skill</Label>
             <Input
               id="tech-skill"
@@ -85,7 +85,7 @@ export function TechniciansBrowse() {
               className="h-11"
             />
           </div>
-          <div className="space-y-1.5 sm:col-span-1">
+          <div className="space-y-1.5">
             <Label htmlFor="tech-location">Location</Label>
             <Input
               id="tech-location"
@@ -95,7 +95,7 @@ export function TechniciansBrowse() {
               className="h-11"
             />
           </div>
-          <div className="space-y-1.5 sm:col-span-1">
+          <div className="space-y-1.5">
             <Label htmlFor="tech-rating">Min rating</Label>
             <select
               id="tech-rating"
@@ -109,7 +109,7 @@ export function TechniciansBrowse() {
               <option value="4.5">4.5+</option>
             </select>
           </div>
-          <div className="flex items-end">
+          <div className="flex items-end sm:col-span-2 lg:col-span-1">
             <Button
               type="button"
               variant="outline"

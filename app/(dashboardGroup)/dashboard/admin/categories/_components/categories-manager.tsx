@@ -128,7 +128,7 @@ export function AdminCategoriesManager() {
         />
       ) : (
         <>
-          <ul className="divide-y divide-border/60 md:hidden">
+          <ul className="divide-y divide-border/60 lg:hidden">
             {categories.map((category) => {
               const busy = pendingId === category.id;
               return (
@@ -168,7 +168,7 @@ export function AdminCategoriesManager() {
             })}
           </ul>
 
-          <div className="hidden md:block">
+          <div className="hidden overflow-x-auto lg:block">
             <Table>
               <TableHeader>
                 <TableRow>

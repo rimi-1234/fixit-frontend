@@ -6,6 +6,7 @@ import { PaymentSuccessView } from "@/app/(publicGroup)/payment/success/_compone
 
 export const metadata: Metadata = {
   title: "Payment successful",
+  description: "Confirming your FixItNow checkout and booking payment status.",
 };
 
 function SuccessFallback() {
@@ -16,8 +17,15 @@ function SuccessFallback() {
           <Wrench aria-hidden="true" className="size-4" />
           FixItNow
         </p>
-        <Loader2 className="size-8 animate-spin text-primary" />
-        <p className="text-sm font-medium">Confirming your payment…</p>
+        <Loader2 className="size-8 animate-spin text-primary" aria-hidden="true" />
+        <div className="space-y-1">
+          <p className="text-lg font-semibold tracking-tight">
+            Confirming your payment…
+          </p>
+          <p className="text-sm text-muted-foreground">
+            Syncing with the payment provider
+          </p>
+        </div>
       </div>
     </div>
   );

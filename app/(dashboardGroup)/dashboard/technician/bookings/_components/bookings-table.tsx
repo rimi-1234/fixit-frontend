@@ -252,7 +252,7 @@ export function TechnicianBookingsTable() {
         />
       ) : (
         <>
-          <ul className="divide-y divide-border/60 md:hidden">
+          <ul className="divide-y divide-border/60 lg:hidden">
             {list.map((booking) => {
               const actions = actionsFor(booking.status);
               const busy = pendingId === booking.id;
@@ -303,7 +303,7 @@ export function TechnicianBookingsTable() {
             })}
           </ul>
 
-          <div className="hidden md:block">
+          <div className="hidden overflow-x-auto lg:block">
             <Table>
               <TableHeader>
                 <TableRow>

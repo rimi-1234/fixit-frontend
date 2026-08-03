@@ -21,6 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
+  SheetClose,
   SheetContent,
   SheetHeader,
   SheetTitle,
@@ -184,18 +185,32 @@ export function DashboardTopbar() {
 
   return (
     <header className="sticky top-0 z-30 border-b border-border/50 bg-background/85 backdrop-blur-md">
-      <div className="flex h-16 items-center justify-between gap-3 px-4 lg:px-8">
-        <div className="flex min-w-0 items-center gap-3">
+      <div className="flex h-14 items-center justify-between gap-2 px-3 sm:h-16 sm:gap-3 sm:px-5 lg:px-8">
+        <div className="flex min-w-0 flex-1 items-center gap-2 sm:gap-3">
           <Sheet>
             <SheetTrigger
-              render={<Button variant="ghost" size="icon" className="lg:hidden" />}
+              render={<Button variant="ghost" size="icon" className="shrink-0 lg:hidden" />}
             >
               <Menu aria-hidden="true" />
               <span className="sr-only">Open menu</span>
             </SheetTrigger>
-            <SheetContent side="left" className="w-72">
+            <SheetContent side="left" className="w-[min(20rem,88vw)] sm:max-w-sm">
               <SheetHeader>
-                <SheetTitle>FixItNow</SheetTitle>
+                <SheetTitle className="sr-only">FixItNow menu</SheetTitle>
+                <SheetClose
+                  nativeButton={false}
+                  render={
+                    <Link
+                      href="/"
+                      className="flex items-center gap-2 font-semibold tracking-tight"
+                    />
+                  }
+                >
+                  <span className="inline-flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                    <Wrench aria-hidden="true" className="size-4" />
+                  </span>
+                  FixItNow
+                </SheetClose>
               </SheetHeader>
               <div className="flex flex-1 flex-col gap-4 px-2 pb-4">
                 <p className="px-3 text-[11px] font-semibold tracking-[0.16em] text-muted-foreground uppercase">
@@ -213,33 +228,47 @@ export function DashboardTopbar() {
             </SheetContent>
           </Sheet>
 
+          <Link
+            href="/"
+            className="hidden shrink-0 items-center gap-2 font-semibold tracking-tight sm:inline-flex lg:hidden"
+          >
+            <span className="inline-flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+              <Wrench aria-hidden="true" className="size-4" />
+            </span>
+            <span className="hidden md:inline">FixItNow</span>
+          </Link>
+
           <div className="min-w-0 space-y-0.5">
-            <p className="text-[11px] font-semibold tracking-[0.16em] text-muted-foreground uppercase">
+            <p className="hidden text-[11px] font-semibold tracking-[0.16em] text-muted-foreground uppercase sm:block">
               {role ? ROLE_LABEL[role] : "Account"} · Workspace
             </p>
-            <h1 className="truncate text-lg font-semibold tracking-tight sm:text-xl">
+            <h1 className="truncate text-base font-semibold tracking-tight sm:text-lg lg:text-xl">
               {title}
             </h1>
           </div>
         </div>
 
-        <div className="flex items-center gap-2 sm:gap-3">
+        <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
           <Link
             href="/services"
             className="hidden items-center gap-2 rounded-full border border-border/70 bg-card px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:border-primary/30 hover:text-foreground md:inline-flex"
           >
             <Search aria-hidden="true" className="size-3.5" />
-            Find a pro
+            <span className="hidden lg:inline">Find a pro</span>
+            <span className="lg:hidden">Browse</span>
           </Link>
           <ThemeToggle />
-          <div className="hidden items-center gap-2 rounded-full border border-border/70 bg-card py-1 pr-3 pl-1 sm:flex">
+          <div className="hidden items-center gap-2 rounded-full border border-border/70 bg-card py-1 pr-3 pl-1 lg:flex">
             <span className="inline-flex size-7 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
               {initials}
             </span>
-            <span className="max-w-[9rem] truncate text-sm text-muted-foreground">
+            <span className="max-w-[9rem] truncate text-sm text-muted-foreground xl:max-w-[12rem]">
               {user?.email}
             </span>
           </div>
+          <span className="inline-flex size-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground lg:hidden">
+            {initials}
+          </span>
           <Link
             href="/services"
             className="inline-flex size-9 items-center justify-center rounded-full border border-border/70 text-muted-foreground transition-colors hover:text-foreground md:hidden"

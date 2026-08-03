@@ -11,14 +11,18 @@ import {
 } from "@/service/booking.service";
 import { toastApiError } from "@/utils/toast-api-error";
 
-export function useMyBookings() {
+export function useMyBookings(options?: { refetchInterval?: number | false }) {
   return useQuery({
     queryKey: queryKeys.bookings.mine,
     queryFn: () => bookingService.listMine(),
+    refetchInterval: options?.refetchInterval,
   });
 }
 
-export function useBooking(id: string | undefined, options?: { refetchInterval?: number | false }) {
+export function useBooking(
+  id: string | undefined,
+  options?: { refetchInterval?: number | false }
+) {
   return useQuery({
     queryKey: queryKeys.bookings.detail(id ?? ""),
     queryFn: () => bookingService.getById(id as string),
@@ -35,6 +39,7 @@ export function useCreateBooking() {
     onSuccess: () => {
       toast.success("Booking requested");
       void queryClient.invalidateQueries({ queryKey: queryKeys.bookings.all });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.technicians.all });
     },
     onError: (error) => toastApiError(error, "Failed to create booking"),
   });

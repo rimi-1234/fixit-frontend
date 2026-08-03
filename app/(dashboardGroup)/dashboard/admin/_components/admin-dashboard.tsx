@@ -110,7 +110,7 @@ export function AdminDashboard() {
         />
       ) : (
         <>
-          <RevealGroup as="div" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <RevealGroup as="div" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {isLoading ? (
               Array.from({ length: 4 }).map((_, i) => (
                 <Skeleton key={i} className="h-16" />

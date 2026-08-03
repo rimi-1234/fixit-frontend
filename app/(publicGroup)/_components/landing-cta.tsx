@@ -9,7 +9,7 @@ import { Float, Reveal } from "@/components/motion/reveal";
 export function LandingCta() {
   return (
     <section className="px-4 py-8 sm:px-6 sm:py-12">
-      <Reveal className="relative mx-auto flex max-w-6xl flex-col gap-8 overflow-hidden rounded-[1.75rem] bg-primary px-8 py-10 text-primary-foreground sm:px-12 sm:py-12 lg:flex-row lg:items-center lg:justify-between">
+      <Reveal className="relative mx-auto flex max-w-6xl flex-col gap-8 overflow-hidden rounded-[1.75rem] bg-primary px-5 py-8 text-primary-foreground sm:px-10 sm:py-10 md:px-12 md:py-12 lg:flex-row lg:items-center lg:justify-between">
         <Float
           distance={18}
           duration={7}
