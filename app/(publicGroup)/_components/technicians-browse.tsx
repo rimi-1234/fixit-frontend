@@ -22,6 +22,8 @@ function useDebouncedTechnicianFilters(
   skill: string,
   location: string,
   minRating: string,
+  minHourlyRate: string,
+  maxHourlyRate: string,
   delayMs = 250
 ): TechnicianFilters {
   const draft = useMemo(() => {
@@ -29,8 +31,10 @@ function useDebouncedTechnicianFilters(
     if (skill.trim()) next.skill = skill.trim();
     if (location.trim()) next.location = location.trim();
     if (minRating) next.minRating = Number(minRating);
+    if (minHourlyRate) next.minHourlyRate = Number(minHourlyRate);
+    if (maxHourlyRate) next.maxHourlyRate = Number(maxHourlyRate);
     return next;
-  }, [skill, location, minRating]);
+  }, [skill, location, minRating, minHourlyRate, maxHourlyRate]);
 
   const [filters, setFilters] = useState(draft);
 
@@ -46,8 +50,16 @@ export function TechniciansBrowse() {
   const [skill, setSkill] = useState("");
   const [location, setLocation] = useState("");
   const [minRating, setMinRating] = useState("");
+  const [minHourlyRate, setMinHourlyRate] = useState("");
+  const [maxHourlyRate, setMaxHourlyRate] = useState("");
 
-  const filters = useDebouncedTechnicianFilters(skill, location, minRating);
+  const filters = useDebouncedTechnicianFilters(
+    skill,
+    location,
+    minRating,
+    minHourlyRate,
+    maxHourlyRate
+  );
 
   // Load the full list, then filter in the UI so skill matching is partial + case-insensitive
   // even when a deployed API still uses exact Prisma `has`.
@@ -59,7 +71,9 @@ export function TechniciansBrowse() {
     );
   }, [data, filters]);
 
-  const hasFilters = Boolean(skill || location || minRating);
+  const hasFilters = Boolean(
+    skill || location || minRating || minHourlyRate || maxHourlyRate
+  );
 
   return (
     <div className="flex flex-1 flex-col">
@@ -69,12 +83,12 @@ export function TechniciansBrowse() {
             Top-rated professionals
           </h1>
           <p className="max-w-xl text-sm text-muted-foreground sm:text-base">
-            Filter by skill, location, and rating to find the right technician.
+            Filter by skill, location, rating, and hourly rate.
             {isFetching && !isLoading ? " Updating…" : ""}
           </p>
         </div>
 
-        <div className="mb-10 grid gap-3 rounded-2xl border border-border/60 bg-card/40 p-4 sm:grid-cols-2 sm:p-5 lg:grid-cols-4">
+        <div className="mb-10 grid gap-3 rounded-2xl border border-border/60 bg-card/40 p-4 sm:grid-cols-2 sm:p-5 lg:grid-cols-3 xl:grid-cols-6">
           <div className="space-y-1.5">
             <Label htmlFor="tech-skill">Skill</Label>
             <Input
@@ -109,7 +123,33 @@ export function TechniciansBrowse() {
               <option value="4.5">4.5+</option>
             </select>
           </div>
-          <div className="flex items-end sm:col-span-2 lg:col-span-1">
+          <div className="space-y-1.5">
+            <Label htmlFor="tech-min-rate">Min rate (৳)</Label>
+            <Input
+              id="tech-min-rate"
+              type="number"
+              min={0}
+              inputMode="numeric"
+              value={minHourlyRate}
+              onChange={(e) => setMinHourlyRate(e.target.value)}
+              placeholder="0"
+              className="h-11"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="tech-max-rate">Max rate (৳)</Label>
+            <Input
+              id="tech-max-rate"
+              type="number"
+              min={0}
+              inputMode="numeric"
+              value={maxHourlyRate}
+              onChange={(e) => setMaxHourlyRate(e.target.value)}
+              placeholder="Any"
+              className="h-11"
+            />
+          </div>
+          <div className="flex items-end sm:col-span-2 lg:col-span-3 xl:col-span-1">
             <Button
               type="button"
               variant="outline"
@@ -119,6 +159,8 @@ export function TechniciansBrowse() {
                 setSkill("");
                 setLocation("");
                 setMinRating("");
+                setMinHourlyRate("");
+                setMaxHourlyRate("");
               }}
             >
               Clear filters

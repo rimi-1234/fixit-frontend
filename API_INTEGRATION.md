@@ -1,72 +1,127 @@
 # API Integration Map
 
-Base URL: `NEXT_PUBLIC_API_URL` (default local `http://localhost:5000/api`).  
-Auth: `Authorization: Bearer <accessToken>` via `lib/api-client.ts` unless noted `skipAuth`.  
-Envelope: `{ success, message, data }` — failures may include `errorDetails.issues`.
+Frontend consumes the FixItNowPro API via typed wrappers in `service/*.ts` and TanStack Query hooks in `hooks/*.ts`.
 
-## Auth
-
-| UI | Endpoint(s) |
+| | |
 |---|---|
-| `app/(authGroup)/_components/login-form.tsx` | `POST /auth/login` |
-| `app/(authGroup)/_components/register-form.tsx` | `POST /auth/register` |
-| `hooks/use-auth.ts` / `components/auth-hydrator.tsx` | `GET /auth/me` (hydrate session) |
-| Logout (navbar / dashboard shell) | Clears cookies/store only — **no** logout API |
+| Base URL | `NEXT_PUBLIC_API_URL` (local: `http://localhost:5000/api`, live: `https://fix-it-now-123.vercel.app/api`) |
+| Auth header | `Authorization: Bearer <accessToken>` (`lib/api-client.ts`) — omitted when `skipAuth: true` |
+| Response | `{ success, message, data }` — validation errors may include `errorDetails.issues` |
 
-## Public
+---
 
-| UI | Endpoint(s) |
-|---|---|
-| Landing featured services | `GET /services` |
-| Landing top technicians | `GET /technicians` |
-| `/services` browse + filters | `GET /services`, `GET /categories` |
-| `/technicians/[id]` profile + reviews | `GET /technicians/:id` |
-| Book Now panel | `POST /bookings` |
+## Page / component → endpoint
 
-## Customer dashboard
+### Auth
 
-| UI | Endpoint(s) |
-|---|---|
-| `/dashboard/customer` | `GET /bookings`, `GET /payments` |
-| `/dashboard/customer/bookings/[id]` | `GET /bookings/:id`, `PATCH /bookings/:id/cancel`, `POST /reviews` |
-| `/dashboard/customer/bookings/[id]/pay` | `GET /bookings/:id`, `POST /payments/create` → redirect `gatewayUrl` |
-| `/payment/success` | Polls `GET /bookings/:id` until `PAID` |
-| `/payment/cancel` | No API (retry → pay page) |
+| Frontend | Endpoint | Auth |
+|---|---|---|
+| `login-form.tsx` | `POST /auth/login` | Public |
+| `register-form.tsx` | `POST /auth/register` | Public |
+| `use-auth.ts` / `auth-hydrator.tsx` | `GET /auth/me` | Bearer |
+| Logout (navbar / dashboard shell) | Client cookie clear only | — |
 
-## Technician dashboard
+### Public browsing & booking
 
-| UI | Endpoint(s) |
-|---|---|
-| `/dashboard/technician` | `GET /technicians/bookings`, `GET /technicians/:id` |
-| `/dashboard/technician/profile` | `GET /technicians/:id`, `PUT /technicians/profile`, then `GET /auth/me` |
-| `/dashboard/technician/availability` | `GET /technicians/:id`, `PUT /technicians/availability` |
-| `/dashboard/technician/services` | `GET /technicians/:id`, `GET /categories`, `POST/PATCH/DELETE /services/:id?` |
-| `/dashboard/technician/bookings` | `GET /technicians/bookings`, `PATCH /technicians/bookings/:id` |
+| Frontend | Endpoint | Auth |
+|---|---|---|
+| Home featured services (`featured-services.tsx`) | `GET /services` | Public |
+| Home top technicians (`top-technicians.tsx`) | `GET /technicians` | Public |
+| `/services` browse (`services-browse.tsx`) | `GET /services`, `GET /categories` | Public |
+| `/technicians` browse (`technicians-browse.tsx`) | `GET /technicians` | Public |
+| `/technicians/[id]` profile | `GET /technicians/:id` | Public |
+| Book Now panel (`book-now-panel.tsx`) | `POST /bookings` | Customer |
 
-## Admin dashboard
+### Customer dashboard
 
-| UI | Endpoint(s) |
-|---|---|
-| `/dashboard/admin` | `GET /admin/users`, `GET /admin/bookings` (stats derived client-side) |
-| `/dashboard/admin/users` | `GET /admin/users`, `PATCH /admin/users/:id` |
-| `/dashboard/admin/categories` | `GET/POST/PATCH/DELETE /admin/categories` |
-| `/dashboard/admin/bookings` | `GET /admin/bookings` |
+| Frontend | Endpoint | Auth |
+|---|---|---|
+| `/dashboard/customer` overview | `GET /bookings`, `GET /payments` | Customer |
+| `/dashboard/customer/bookings` | `GET /bookings` | Customer |
+| `/dashboard/customer/bookings/[id]` | `GET /bookings/:id` | Customer |
+| Cancel booking button | `PATCH /bookings/:id/cancel` | Customer |
+| Leave review (`review-form.tsx`) | `POST /reviews` | Customer |
+| `/dashboard/customer/bookings/[id]/pay` | `GET /bookings/:id`, `POST /payments/create` → redirect `gatewayUrl` | Customer |
+| `/dashboard/customer/payments` | `GET /payments` | Customer |
+| `/payment/success` | Polls `GET /bookings/:id` until `PAID` | Customer |
+| `/payment/cancel` | UI only (retry → pay page) | — |
+
+### Technician dashboard
+
+| Frontend | Endpoint | Auth |
+|---|---|---|
+| `/dashboard/technician` overview | `GET /technicians/bookings` | Technician |
+| `/dashboard/technician/profile` | `GET /technicians/:id`, `PUT /technicians/profile` | Technician |
+| `/dashboard/technician/availability` | `GET /technicians/:id`, `PUT /technicians/availability` | Technician |
+| `/dashboard/technician/services` list | `GET /technicians/:id`, `GET /categories` | Technician |
+| Create / edit / delete service | `POST /services`, `PATCH /services/:id`, `DELETE /services/:id` | Technician |
+| `/dashboard/technician/bookings` | `GET /technicians/bookings` | Technician |
+| Accept / Decline / Mark In-Progress / Complete | `PATCH /technicians/bookings/:id` | Technician |
+
+### Admin dashboard
+
+| Frontend | Endpoint | Auth |
+|---|---|---|
+| `/dashboard/admin` stats | `GET /admin/users`, `GET /admin/bookings` (aggregated client-side) | Admin |
+| `/dashboard/admin/users` | `GET /admin/users`, `PATCH /admin/users/:id` (ban/unban) | Admin |
+| `/dashboard/admin/categories` | `GET/POST/PATCH/DELETE /admin/categories` | Admin |
+| `/dashboard/admin/bookings` | `GET /admin/bookings` | Admin |
+
+---
 
 ## Service layer ↔ hooks
 
-| Service file | Hook file |
-|---|---|
-| `service/auth.service.ts` | `hooks/use-auth.ts` |
-| `service/service.service.ts` | `hooks/use-services.ts` |
-| `service/category.service.ts` | `hooks/use-categories.ts` |
-| `service/technician.service.ts` | `hooks/use-technicians.ts` |
-| `service/booking.service.ts` | `hooks/use-bookings.ts` |
-| `service/payment.service.ts` | `hooks/use-payments.ts` |
-| `service/review.service.ts` | `hooks/use-reviews.ts` |
-| `service/admin.service.ts` | `hooks/use-admin.ts` |
+| Service | Hook | Endpoints wrapped |
+|---|---|---|
+| `auth.service.ts` | `use-auth.ts` | `/auth/register`, `/auth/login`, `/auth/me` |
+| `service.service.ts` | `use-services.ts` | `GET/POST/PATCH/DELETE /services` |
+| `category.service.ts` | `use-categories.ts` | `GET /categories` (public filters) |
+| `technician.service.ts` | `use-technicians.ts` | `/technicians`, `/technicians/:id`, profile, availability, bookings |
+| `booking.service.ts` | `use-bookings.ts` | `POST/GET /bookings`, `GET /bookings/:id`, `PATCH .../cancel` |
+| `payment.service.ts` | `use-payments.ts` | `POST /payments/create`, `GET /payments` |
+| `review.service.ts` | `use-reviews.ts` | `POST /reviews` |
+| `admin.service.ts` | `use-admin.ts` | `/admin/users`, `/admin/bookings`, `/admin/categories` |
+
+---
+
+## Backend endpoints — consumption checklist
+
+| Module | Endpoint | Consumed by frontend? |
+|---|---|---|
+| Auth | `POST /auth/register` | Yes |
+| Auth | `POST /auth/login` | Yes |
+| Auth | `GET /auth/me` | Yes |
+| Services | `GET /services` | Yes |
+| Services | `POST /services` | Yes (technician) |
+| Services | `PATCH /services/:id` | Yes (technician) |
+| Services | `DELETE /services/:id` | Yes (technician) |
+| Technicians | `GET /technicians` | Yes |
+| Technicians | `GET /technicians/:id` | Yes |
+| Technicians | `PUT /technicians/profile` | Yes |
+| Technicians | `PUT /technicians/availability` | Yes |
+| Technicians | `GET /technicians/bookings` | Yes |
+| Technicians | `PATCH /technicians/bookings/:id` | Yes |
+| Categories | `GET /categories` | Yes (public filters) |
+| Bookings | `POST /bookings` | Yes |
+| Bookings | `GET /bookings` | Yes |
+| Bookings | `GET /bookings/:id` | Yes |
+| Bookings | `PATCH /bookings/:id/cancel` | Yes |
+| Payments | `POST /payments/create` | Yes |
+| Payments | `GET /payments` | Yes |
+| Payments | `GET /payments/:id` | Available in service (detail optional) |
+| Reviews | `POST /reviews` | Yes |
+| Admin | `GET /admin/users` | Yes |
+| Admin | `PATCH /admin/users/:id` | Yes |
+| Admin | `GET /admin/bookings` | Yes |
+| Admin | `GET/POST/PATCH/DELETE /admin/categories` | Yes |
+| Payments | `POST /payments/confirm` | **Server-only** (Stripe webhook) |
+| Payments | `POST /payments/sslcommerz/*` | **Server-only** (gateway callbacks) |
+
+---
 
 ## Notes
 
-- Stripe Checkout is hosted — frontend never posts card data; webhook `POST /payments/confirm` is server-only.
-- Availability is stored as freeform `string[]` (e.g. `"Monday 9AM-5PM"`).
-- Middleware protects `/dashboard/*`, `/login`, `/register` with role cookies.
+- Card data never touches the Next.js app — Stripe Checkout / SSLCommerz redirect only.
+- After `POST /payments/create`, the UI navigates to `data.gatewayUrl`.
+- Booking status toasts poll `GET /bookings` on customer pages (`use-booking-status-toasts.ts`).
+- Middleware (`middleware.ts`) gates `/dashboard/*` by role cookie; API still enforces JWT roles.

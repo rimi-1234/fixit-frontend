@@ -13,6 +13,8 @@ export interface TechnicianFilters {
   location?: string;
   minExperience?: number;
   minRating?: number;
+  minHourlyRate?: number;
+  maxHourlyRate?: number;
   search?: string;
 }
 

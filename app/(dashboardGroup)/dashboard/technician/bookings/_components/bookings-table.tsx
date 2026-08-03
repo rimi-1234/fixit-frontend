@@ -65,7 +65,7 @@ function actionsFor(status: BookingStatus): {
         { status: "DECLINED", label: "Decline", variant: "destructive" },
       ];
     case "PAID":
-      return [{ status: "IN_PROGRESS", label: "Start job" }];
+      return [{ status: "IN_PROGRESS", label: "Mark In-Progress" }];
     case "IN_PROGRESS":
       return [{ status: "COMPLETED", label: "Mark completed" }];
     default:

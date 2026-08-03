@@ -37,6 +37,14 @@ export function applyTechnicianFilters(
       if ((tech.averageRating ?? 0) < filters.minRating) return false;
     }
 
+    const rate = profile?.hourlyRate ?? 0;
+    if (filters.minHourlyRate !== undefined && rate < filters.minHourlyRate) {
+      return false;
+    }
+    if (filters.maxHourlyRate !== undefined && rate > filters.maxHourlyRate) {
+      return false;
+    }
+
     if (search) {
       const email = tech.email?.toLowerCase() ?? "";
       const skillsBlob = (profile?.skills ?? []).join(" ").toLowerCase();
