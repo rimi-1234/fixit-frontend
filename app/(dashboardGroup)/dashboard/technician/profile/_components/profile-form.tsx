@@ -228,7 +228,7 @@ export function TechnicianProfileForm() {
             ) : null}
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="hourlyRate">Hourly rate</Label>
+            <Label htmlFor="hourlyRate">Hourly rate (৳)</Label>
             <Input
               id="hourlyRate"
               type="number"

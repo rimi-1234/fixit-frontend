@@ -15,6 +15,7 @@ import { StatTile } from "@/app/(dashboardGroup)/dashboard/_components/stat-tile
 import { BookingStatusBadge } from "@/components/booking-status-badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
+import { RevealGroup, RevealItem } from "@/components/motion/reveal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAdminBookings, useAdminUsers } from "@/hooks/use-admin";
 import type { BookingStatus } from "@/lib/types";
@@ -109,54 +110,68 @@ export function AdminDashboard() {
         />
       ) : (
         <>
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <RevealGroup as="div" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
             {isLoading ? (
               Array.from({ length: 4 }).map((_, i) => (
-                <Skeleton key={i} className="h-24 rounded-xl" />
+                <Skeleton key={i} className="h-16" />
               ))
             ) : (
               <>
-                <StatTile
-                  label="Total users"
-                  value={stats.totalUsers}
-                  icon={Users}
-                />
-                <StatTile
-                  label="Active bookings"
-                  value={stats.activeBookings}
-                  icon={CalendarDays}
-                />
-                <StatTile
-                  label="Completed jobs"
-                  value={stats.completed}
-                  icon={Wrench}
-                />
-                <StatTile
-                  label="Revenue"
-                  value={formatCurrency(stats.revenue)}
-                  icon={Banknote}
-                />
+                <RevealItem as="div">
+                  <StatTile
+                    label="Total users"
+                    value={stats.totalUsers}
+                    icon={Users}
+                  />
+                </RevealItem>
+                <RevealItem as="div">
+                  <StatTile
+                    label="Active bookings"
+                    value={stats.activeBookings}
+                    icon={CalendarDays}
+                  />
+                </RevealItem>
+                <RevealItem as="div">
+                  <StatTile
+                    label="Completed jobs"
+                    value={stats.completed}
+                    icon={Wrench}
+                  />
+                </RevealItem>
+                <RevealItem as="div">
+                  <StatTile
+                    label="Revenue"
+                    value={formatCurrency(stats.revenue)}
+                    icon={Banknote}
+                  />
+                </RevealItem>
               </>
             )}
-          </div>
+          </RevealGroup>
 
-          <div className="grid gap-3 sm:grid-cols-3">
+          <RevealGroup as="div" className="grid gap-3 sm:grid-cols-3">
             {isLoading ? (
               Array.from({ length: 3 }).map((_, i) => (
-                <Skeleton key={i} className="h-20 rounded-xl" />
+                <Skeleton key={i} className="h-16" />
               ))
             ) : (
               <>
-                <StatTile label="Customers" value={stats.customers} />
-                <StatTile label="Technicians" value={stats.technicians} />
-                <StatTile
-                  label="Banned users"
-                  value={stats.banned}
-                  icon={ShieldAlert}
-                />
+                <RevealItem as="div">
+                  <StatTile label="Customers" value={stats.customers} />
+                </RevealItem>
+                <RevealItem as="div">
+                  <StatTile label="Technicians" value={stats.technicians} />
+                </RevealItem>
+                <RevealItem as="div">
+                  <StatTile
+                    label="Banned users"
+                    value={stats.banned}
+                    icon={ShieldAlert}
+                  />
+                </RevealItem>
               </>
             )}
-          </div>
+          </RevealGroup>
 
           <section className="space-y-3 border-y border-border/60 py-5">
             <div className="space-y-1">
@@ -232,10 +247,11 @@ export function AdminDashboard() {
                 description="When customers book technicians, they'll appear here."
               />
             ) : (
-              <ul className="divide-y divide-border/60">
+              <RevealGroup as="ul" className="divide-y divide-border/60">
                 {stats.recent.map((booking) => (
-                  <li
+                  <RevealItem
                     key={booking.id}
+                    as="li"
                     className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between"
                   >
                     <div className="min-w-0 space-y-1">
@@ -258,9 +274,9 @@ export function AdminDashboard() {
                         {formatCurrency(booking.service.price)}
                       </p>
                     ) : null}
-                  </li>
+                  </RevealItem>
                 ))}
-              </ul>
+              </RevealGroup>
             )}
           </section>
         </>

@@ -91,6 +91,8 @@ export function PayBookingView({ bookingId }: { bookingId: string }) {
 
   const price =
     typeof booking.service?.price === "number" ? booking.service.price : null;
+  const hasPendingPayment = booking.payment?.status === "PENDING";
+  const hasFailedPayment = booking.payment?.status === "FAILED";
 
   function handlePay() {
     createPayment.mutate({ bookingId, provider: "STRIPE" });
@@ -119,6 +121,16 @@ export function PayBookingView({ bookingId }: { bookingId: string }) {
         <p className="text-sm text-muted-foreground">
           You&apos;ll be redirected to Stripe Checkout to complete payment securely.
         </p>
+        {hasPendingPayment ? (
+          <p className="rounded-xl border border-info/20 bg-info/10 px-3 py-2 text-sm text-info">
+            A checkout was already started for this booking. Continue to open a fresh Stripe session.
+          </p>
+        ) : null}
+        {hasFailedPayment ? (
+          <p className="rounded-xl border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+            The previous payment attempt failed. You can try again below.
+          </p>
+        ) : null}
       </div>
 
       <dl className="space-y-4 divide-y divide-border/60 border-y border-border/60">
@@ -151,7 +163,7 @@ export function PayBookingView({ bookingId }: { bookingId: string }) {
       <div className="space-y-3">
         <Button
           size="lg"
-          className="w-full"
+          className="w-full rounded-full"
           onClick={handlePay}
           disabled={createPayment.isPending}
         >
@@ -163,7 +175,7 @@ export function PayBookingView({ bookingId }: { bookingId: string }) {
           ) : (
             <>
               <CreditCard aria-hidden="true" />
-              Pay with Stripe
+              {hasPendingPayment ? "Continue to Stripe" : "Pay with Stripe"}
             </>
           )}
         </Button>

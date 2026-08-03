@@ -164,7 +164,7 @@ export function ServiceFormDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="service-price">Price</Label>
+            <Label htmlFor="service-price">Price (৳)</Label>
             <Input
               id="service-price"
               type="number"

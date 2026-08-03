@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { RegisterForm } from "@/app/(authGroup)/_components/register-form";
+import { Reveal } from "@/components/motion/reveal";
 
 export const metadata: Metadata = {
   title: "Create account",
@@ -8,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function RegisterPage() {
   return (
-    <div className="space-y-8">
+    <Reveal className="space-y-8">
       <div className="space-y-2">
         <h1 className="text-2xl font-semibold tracking-tight">Create account</h1>
         <p className="text-sm text-muted-foreground">
@@ -16,6 +17,6 @@ export default function RegisterPage() {
         </p>
       </div>
       <RegisterForm />
-    </div>
+    </Reveal>
   );
 }

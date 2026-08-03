@@ -20,3 +20,15 @@ export function colorFromString(value: string): string {
   const hue = Math.abs(hash) % 360;
   return `oklch(0.92 0.04 ${hue})`;
 }
+
+const AVATAR_COUNT = 6;
+
+/** Deterministic illustrated avatar (public/avatars) for a string id/email. */
+export function avatarFromString(value: string): string {
+  let hash = 0;
+  for (let i = 0; i < value.length; i += 1) {
+    hash = value.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  const index = (Math.abs(hash) % AVATAR_COUNT) + 1;
+  return `/avatars/avatar-${index}.png`;
+}

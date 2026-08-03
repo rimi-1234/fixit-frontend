@@ -102,7 +102,7 @@ export function PaymentSuccessView() {
     return (
       <div className="mx-auto flex max-w-md flex-col items-center gap-4 py-20 text-center">
         <CheckCircle2
-          className="size-12 text-emerald-600 dark:text-emerald-400"
+          className="size-12 text-success"
           aria-hidden="true"
         />
         <div className="space-y-1">

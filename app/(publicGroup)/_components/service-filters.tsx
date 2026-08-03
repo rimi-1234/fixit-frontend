@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { SlidersHorizontal, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { useCategories } from "@/hooks/use-categories";
+import type { Service } from "@/lib/types";
 import type { ServiceFilters } from "@/service/service.service";
 import { cn } from "@/lib/utils";
 
@@ -26,7 +27,7 @@ const RATING_OPTIONS = [
 
 export type ServiceFilterDraft = {
   search: string;
-  type: string;
+  categoryId: string;
   location: string;
   minPrice: string;
   maxPrice: string;
@@ -36,7 +37,7 @@ export type ServiceFilterDraft = {
 export function emptyFilterDraft(): ServiceFilterDraft {
   return {
     search: "",
-    type: "",
+    categoryId: "",
     location: "",
     minPrice: "",
     maxPrice: "",
@@ -44,15 +45,62 @@ export function emptyFilterDraft(): ServiceFilterDraft {
   };
 }
 
+function toOptionalNumber(value: string): number | undefined {
+  if (value.trim() === "") return undefined;
+  const n = Number(value);
+  return Number.isFinite(n) ? n : undefined;
+}
+
 export function draftToFilters(draft: ServiceFilterDraft): ServiceFilters {
   return {
     search: draft.search.trim() || undefined,
-    type: draft.type || undefined,
+    categoryId: draft.categoryId || undefined,
     location: draft.location.trim() || undefined,
-    minPrice: draft.minPrice ? Number(draft.minPrice) : undefined,
-    maxPrice: draft.maxPrice ? Number(draft.maxPrice) : undefined,
-    minRating: draft.minRating ? Number(draft.minRating) : undefined,
+    minPrice: toOptionalNumber(draft.minPrice),
+    maxPrice: toOptionalNumber(draft.maxPrice),
+    minRating: toOptionalNumber(draft.minRating),
   };
+}
+
+/** Always apply filters in the UI so results stay correct even if the API misses a param. */
+export function applyServiceFilters(
+  services: Service[],
+  filters: ServiceFilters
+): Service[] {
+  const search = filters.search?.trim().toLowerCase();
+  const location = filters.location?.trim().toLowerCase();
+
+  return services.filter((service) => {
+    if (filters.categoryId && service.categoryId !== filters.categoryId) {
+      return false;
+    }
+
+    if (search) {
+      const haystack = `${service.name} ${service.description}`.toLowerCase();
+      if (!haystack.includes(search)) return false;
+    }
+
+    if (location) {
+      const techLocation =
+        service.technician?.technicianProfile?.location?.toLowerCase() ?? "";
+      if (!techLocation.includes(location)) return false;
+    }
+
+    if (filters.minPrice !== undefined && service.price < filters.minPrice) {
+      return false;
+    }
+
+    if (filters.maxPrice !== undefined && service.price > filters.maxPrice) {
+      return false;
+    }
+
+    if (filters.minRating !== undefined) {
+      const rating = service.technician?.averageRating ?? 0;
+      if (rating < filters.minRating) return false;
+    }
+
+    return true;
+  });
 }
 
 function FilterFields({
@@ -79,11 +127,11 @@ function FilterFields({
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor={`${idPrefix}-type`}>Category</Label>
+        <Label htmlFor={`${idPrefix}-category`}>Category</Label>
         <select
-          id={`${idPrefix}-type`}
-          value={draft.type}
-          onChange={(e) => onChange({ ...draft, type: e.target.value })}
+          id={`${idPrefix}-category`}
+          value={draft.categoryId}
+          onChange={(e) => onChange({ ...draft, categoryId: e.target.value })}
           className={cn(
             "h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none",
             "focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
@@ -91,7 +139,7 @@ function FilterFields({
         >
           <option value="">All categories</option>
           {(categories ?? []).map((category) => (
-            <option key={category.id} value={category.name}>
+            <option key={category.id} value={category.id}>
               {category.name}
             </option>
           ))}
@@ -109,7 +157,7 @@ function FilterFields({
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor={`${idPrefix}-minPrice`}>Min price</Label>
+        <Label htmlFor={`${idPrefix}-minPrice`}>Min price (৳)</Label>
         <Input
           id={`${idPrefix}-minPrice`}
           type="number"
@@ -122,7 +170,7 @@ function FilterFields({
       </div>
 
       <div className="space-y-1.5">
-        <Label htmlFor={`${idPrefix}-maxPrice`}>Max price</Label>
+        <Label htmlFor={`${idPrefix}-maxPrice`}>Max price (৳)</Label>
         <Input
           id={`${idPrefix}-maxPrice`}
           type="number"
@@ -231,16 +279,16 @@ export function ServiceFiltersBar({
 /** Debounce draft filters before hitting the API. */
 export function useDebouncedFilters(
   draft: ServiceFilterDraft,
-  delayMs = 350
+  delayMs = 300
 ): ServiceFilters {
+  const serialized = useMemo(() => JSON.stringify(draft), [draft]);
   const [filters, setFilters] = useState(() => draftToFilters(draft));
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setFilters(draftToFilters(draft));
-    }, delayMs);
+    const next = draftToFilters(JSON.parse(serialized) as ServiceFilterDraft);
+    const timer = window.setTimeout(() => setFilters(next), delayMs);
     return () => window.clearTimeout(timer);
-  }, [draft, delayMs]);
+  }, [serialized, delayMs]);
 
   return filters;
 }

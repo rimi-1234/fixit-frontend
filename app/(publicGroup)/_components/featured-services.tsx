@@ -8,6 +8,11 @@ import {
 } from "@/app/(publicGroup)/_components/service-card";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
+import {
+  RevealGroup,
+  RevealItem,
+  SectionHeader,
+} from "@/components/motion/reveal";
 import { useServices } from "@/hooks/use-services";
 
 export function FeaturedServices() {
@@ -15,20 +20,24 @@ export function FeaturedServices() {
   const featured = (data ?? []).slice(0, 6);
 
   return (
-    <section className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
-      <div className="mb-10 flex flex-wrap items-end justify-between gap-4">
-        <div className="space-y-2">
-          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-            Featured services
-          </h2>
-          <p className="max-w-lg text-sm text-muted-foreground sm:text-base">
-            Popular home services from technicians near you, ready to book.
-          </p>
-        </div>
-        <Button variant="ghost" nativeButton={false} render={<Link href="/services" />}>
-          View all
-        </Button>
-      </div>
+    <section
+      id="services"
+      className="scroll-mt-24 mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20"
+    >
+      <SectionHeader
+        title="Featured services"
+        description="Popular home services from technicians near you, ready to book."
+        action={
+          <Button
+            variant="outline"
+            className="rounded-full"
+            nativeButton={false}
+            render={<Link href="/services" />}
+          >
+            View all
+          </Button>
+        }
+      />
 
       {isLoading ? (
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
@@ -57,11 +66,22 @@ export function FeaturedServices() {
           }
         />
       ) : (
-        <ul className="grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
+        <RevealGroup
+          as="ul"
+          animate="visible"
+          className="grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-3"
+        >
           {featured.map((service) => (
-            <ServiceCard key={service.id} service={service} />
+            <RevealItem
+              key={service.id}
+              as="li"
+              whileHover={{ y: -6 }}
+              transition={{ type: "spring", stiffness: 300, damping: 24 }}
+            >
+              <ServiceCard service={service} />
+            </RevealItem>
           ))}
-        </ul>
+        </RevealGroup>
       )}
     </section>
   );

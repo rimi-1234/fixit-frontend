@@ -15,6 +15,7 @@ import { StatTile } from "@/app/(dashboardGroup)/dashboard/_components/stat-tile
 import { BookingStatusBadge } from "@/components/booking-status-badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
+import { RevealGroup, RevealItem } from "@/components/motion/reveal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/hooks/use-auth";
 import { useTechnician, useTechnicianBookings } from "@/hooks/use-technicians";
@@ -67,24 +68,32 @@ export function TechnicianDashboard() {
         </p>
       </div>
 
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      <RevealGroup as="div" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         {bookingsLoading ? (
           Array.from({ length: 4 }).map((_, i) => (
-            <Skeleton key={i} className="h-24 rounded-xl" />
+            <Skeleton key={i} className="h-16" />
           ))
         ) : (
           <>
-            <StatTile label="Pending requests" value={pending.length} icon={Inbox} />
-            <StatTile label="Upcoming jobs" value={upcoming.length} icon={CalendarClock} />
-            <StatTile label="In progress" value={inProgress} icon={Clock3} />
-            <StatTile
-              label="Earnings"
-              value={formatCurrency(earnings)}
-              icon={Banknote}
-            />
+            <RevealItem as="div">
+              <StatTile label="Pending requests" value={pending.length} icon={Inbox} />
+            </RevealItem>
+            <RevealItem as="div">
+              <StatTile label="Upcoming jobs" value={upcoming.length} icon={CalendarClock} />
+            </RevealItem>
+            <RevealItem as="div">
+              <StatTile label="In progress" value={inProgress} icon={Clock3} />
+            </RevealItem>
+            <RevealItem as="div">
+              <StatTile
+                label="Earnings"
+                value={formatCurrency(earnings)}
+                icon={Banknote}
+              />
+            </RevealItem>
           </>
         )}
-      </div>
+      </RevealGroup>
 
       {(needsProfile || needsAvailability || needsServices) && !profileLoading ? (
         <section className="space-y-3 border-y border-border/60 py-5">
@@ -184,10 +193,11 @@ export function TechnicianDashboard() {
             description="New booking requests will show up here."
           />
         ) : (
-          <ul className="divide-y divide-border/60">
+          <RevealGroup as="ul" className="divide-y divide-border/60">
             {pending.map((booking) => (
-              <li
+              <RevealItem
                 key={booking.id}
+                as="li"
                 className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div className="min-w-0 space-y-1">
@@ -216,9 +226,9 @@ export function TechnicianDashboard() {
                 >
                   Review
                 </Button>
-              </li>
+              </RevealItem>
             ))}
-          </ul>
+          </RevealGroup>
         )}
       </section>
 
@@ -243,10 +253,11 @@ export function TechnicianDashboard() {
             description="Accepted bookings appear here once customers request work."
           />
         ) : (
-          <ul className="divide-y divide-border/60">
+          <RevealGroup as="ul" className="divide-y divide-border/60">
             {upcoming.slice(0, 6).map((booking) => (
-              <li
+              <RevealItem
                 key={booking.id}
+                as="li"
                 className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between"
               >
                 <div className="min-w-0 space-y-1">
@@ -268,9 +279,9 @@ export function TechnicianDashboard() {
                     {formatCurrency(booking.service.price)}
                   </p>
                 ) : null}
-              </li>
+              </RevealItem>
             ))}
-          </ul>
+          </RevealGroup>
         )}
       </section>
 

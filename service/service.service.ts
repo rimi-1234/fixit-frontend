@@ -5,6 +5,7 @@ import { toQueryString } from "@/utils/to-query-string";
 export interface ServiceFilters {
   search?: string;
   type?: string;
+  categoryId?: string;
   location?: string;
   minPrice?: number;
   maxPrice?: number;

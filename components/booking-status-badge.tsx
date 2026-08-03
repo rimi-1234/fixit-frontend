@@ -3,34 +3,37 @@ import type { BookingStatus } from "@/lib/types";
 
 export type { BookingStatus };
 
+// Deliberately limited to the app's semantic palette (warning / info / success /
+// destructive / primary / neutral) instead of a different hue per status, so the
+// badge palette stays disciplined and consistent with the rest of the UI.
 const STATUS_STYLES: Record<BookingStatus, { label: string; className: string }> = {
   REQUESTED: {
     label: "Requested",
-    className: "bg-amber-100 text-amber-800 dark:bg-amber-500/15 dark:text-amber-400",
+    className: "bg-warning/15 text-warning",
   },
   ACCEPTED: {
     label: "Accepted",
-    className: "bg-blue-100 text-blue-800 dark:bg-blue-500/15 dark:text-blue-400",
+    className: "bg-info/15 text-info",
   },
   DECLINED: {
     label: "Declined",
-    className: "bg-red-100 text-red-800 dark:bg-red-500/15 dark:text-red-400",
+    className: "bg-destructive/10 text-destructive",
   },
   PAID: {
     label: "Paid",
-    className: "bg-violet-100 text-violet-800 dark:bg-violet-500/15 dark:text-violet-400",
+    className: "bg-primary/10 text-primary",
   },
   IN_PROGRESS: {
     label: "In progress",
-    className: "bg-green-100 text-green-800 dark:bg-green-500/15 dark:text-green-400",
+    className: "bg-success/15 text-success",
   },
   COMPLETED: {
     label: "Completed",
-    className: "bg-slate-200 text-slate-700 dark:bg-slate-500/20 dark:text-slate-300",
+    className: "bg-muted text-muted-foreground",
   },
   CANCELLED: {
     label: "Cancelled",
-    className: "bg-rose-200 text-rose-900 dark:bg-rose-500/20 dark:text-rose-400",
+    className: "bg-destructive/15 text-destructive",
   },
 };
 

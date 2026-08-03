@@ -46,8 +46,8 @@ function StatusPill({ status }: { status: UserStatus }) {
       className={cn(
         "inline-flex rounded-full px-2.5 py-1 text-xs font-medium",
         status === "ACTIVE"
-          ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-400"
-          : "bg-rose-100 text-rose-800 dark:bg-rose-500/15 dark:text-rose-400"
+          ? "bg-success/15 text-success"
+          : "bg-destructive/10 text-destructive"
       )}
     >
       {status === "ACTIVE" ? "Active" : "Banned"}

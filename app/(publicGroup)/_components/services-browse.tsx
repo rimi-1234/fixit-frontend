@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Wrench } from "lucide-react";
 
 import {
@@ -9,6 +9,7 @@ import {
 } from "@/app/(publicGroup)/_components/service-card";
 import {
   ServiceFiltersBar,
+  applyServiceFilters,
   emptyFilterDraft,
   useDebouncedFilters,
   type ServiceFilterDraft,
@@ -16,14 +17,18 @@ import {
 import { SiteFooter } from "@/app/(publicGroup)/_components/site-footer";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
+import { RevealGroup, RevealItem } from "@/components/motion/reveal";
 import { useServices } from "@/hooks/use-services";
 
 export function ServicesBrowse() {
-  const [draft, setDraft] = useState<ServiceFilterDraft>(emptyFilterDraft);
+  const [draft, setDraft] = useState<ServiceFilterDraft>(() => emptyFilterDraft());
   const filters = useDebouncedFilters(draft);
 
   const { data, isLoading, isError, isFetching, refetch } = useServices(filters);
-  const services = data ?? [];
+  const services = useMemo(
+    () => applyServiceFilters(data ?? [], filters),
+    [data, filters]
+  );
 
   return (
     <div className="flex flex-1 flex-col">
@@ -68,17 +73,31 @@ export function ServicesBrowse() {
             title="No services match your filters"
             description="Try clearing filters or broadening your search."
             action={
-              <Button variant="outline" onClick={() => setDraft(emptyFilterDraft())}>
+              <Button
+                variant="outline"
+                onClick={() => setDraft(emptyFilterDraft())}
+              >
                 Clear filters
               </Button>
             }
           />
         ) : (
-          <ul className="grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
+          <RevealGroup
+            as="ul"
+            animate="visible"
+            className="grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-3"
+          >
             {services.map((service) => (
-              <ServiceCard key={service.id} service={service} />
+              <RevealItem
+                key={service.id}
+                as="li"
+                whileHover={{ y: -4 }}
+                transition={{ type: "spring", stiffness: 300, damping: 24 }}
+              >
+                <ServiceCard service={service} />
+              </RevealItem>
             ))}
-          </ul>
+          </RevealGroup>
         )}
       </section>
 
