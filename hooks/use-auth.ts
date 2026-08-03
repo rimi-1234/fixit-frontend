@@ -71,8 +71,10 @@ export function useAuth() {
     return result;
   }
 
-  async function register(payload: RegisterPayload): Promise<User> {
-    return authService.register(payload);
+  async function register(payload: RegisterPayload): Promise<LoginResult> {
+    const result = await authService.register(payload);
+    setSession(result.accessToken, result.user);
+    return result;
   }
 
   function logout() {

@@ -16,6 +16,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/use-auth";
+import { dashboardPathForRole } from "@/lib/auth-token";
 import { applyApiFieldErrors } from "@/utils/apply-api-field-errors";
 import { TECHNICIAN_AVATAR_PRESETS } from "@/utils/technician-images";
 
@@ -124,7 +125,7 @@ export function RegisterForm() {
         .map((s) => s.trim())
         .filter(Boolean);
 
-      await registerUser({
+      const result = await registerUser({
         email: values.email,
         password: values.password,
         role: values.role,
@@ -140,8 +141,9 @@ export function RegisterForm() {
           : {}),
       });
 
-      toast.success("Account created — sign in to continue");
-      router.push("/login");
+      toast.success("Account created — welcome to FixItNow!");
+      router.push(dashboardPathForRole(result.user.role));
+      router.refresh();
     } catch (error) {
       applyApiFieldErrors(error, setError, "Registration failed");
     }

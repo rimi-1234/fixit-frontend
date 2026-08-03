@@ -20,7 +20,7 @@ export interface LoginPayload {
 
 export const authService = {
   register(payload: RegisterPayload) {
-    return apiFetch<User>("/auth/register", {
+    return apiFetch<LoginResult>("/auth/register", {
       method: "POST",
       body: payload,
       skipAuth: true,
