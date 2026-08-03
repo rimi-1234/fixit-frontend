@@ -9,53 +9,47 @@ export type UploadImageResult = {
 function blobToDataUrl(blob: Blob): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
+    reader.onload = () => {
+      const result = String(reader.result || "");
+      if (!result.startsWith("data:image/")) {
+        reject(new Error("Could not convert image. Try JPG or PNG."));
+        return;
+      }
+      resolve(result);
+    };
     reader.onerror = () => reject(new Error("Could not read optimized image"));
     reader.readAsDataURL(blob);
   });
 }
 
 /**
- * Optimize in the browser, then persist as a data URL.
- * This works the same locally and on Vercel (no /uploads disk dependency).
+ * Compress in the browser and return a data URL.
+ * No server/disk step — works the same locally and on Vercel.
  */
 export async function uploadOptimizedImage(
   file: File,
   options: OptimizeImageOptions = {}
 ): Promise<UploadImageResult> {
-  const originalBytes = file.size;
-  const { blob, fileName, mimeType } = await optimizeImageFile(file, options);
-
-  // Prefer client-side data URL so deploy never depends on local disk paths.
-  try {
-    const form = new FormData();
-    form.append("file", blob, fileName);
-    form.append("mimeType", mimeType);
-
-    const response = await fetch("/api/upload", {
-      method: "POST",
-      body: form,
-    });
-
-    const data = (await response.json().catch(() => null)) as
-      | { url?: string; error?: string }
-      | null;
-
-    if (response.ok && data?.url?.startsWith("data:image/")) {
-      return {
-        url: data.url,
-        bytes: originalBytes,
-        optimizedBytes: blob.size,
-      };
-    }
-  } catch {
-    // fall through to local data URL
+  if (!file) {
+    throw new Error("No image selected");
   }
 
+  const originalBytes = file.size;
+  const { blob, mimeType } = await optimizeImageFile(file, {
+    mimeType: "image/jpeg",
+    ...options,
+  });
+
   const url = await blobToDataUrl(blob);
+
+  // Match backend max (~1.5MB string) with a little headroom
+  if (url.length > 1_400_000) {
+    throw new Error("Image is still too large after compression. Try a smaller photo.");
+  }
+
   return {
     url,
     bytes: originalBytes,
-    optimizedBytes: blob.size,
+    optimizedBytes: blob.size || Math.round((url.length * 3) / 4),
   };
 }

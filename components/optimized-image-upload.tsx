@@ -35,14 +35,15 @@ export function OptimizedImageUpload({
     try {
       const result = await uploadOptimizedImage(file, optimize);
       onUploaded(result.url);
-      const savedKb = Math.round(result.optimizedBytes / 1024);
-      const originalKb = Math.round(result.bytes / 1024);
+      const savedKb = Math.max(1, Math.round(result.optimizedBytes / 1024));
+      const originalKb = Math.max(1, Math.round(result.bytes / 1024));
       toast.success(
         originalKb > savedKb
-          ? `Image optimized (${originalKb}KB → ${savedKb}KB)`
-          : "Image uploaded"
+          ? `Photo ready (${originalKb}KB → ${savedKb}KB)`
+          : "Photo ready"
       );
     } catch (error) {
+      console.error("Image upload failed:", error);
       toast.error(
         error instanceof Error ? error.message : "Could not upload image"
       );
