@@ -1,28 +1,32 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Wrench } from "lucide-react";
 
 import { PaymentSuccessView } from "@/app/(publicGroup)/payment/success/_components/payment-success";
 
 export const metadata: Metadata = {
-  title: "Payment success",
+  title: "Payment successful",
 };
 
 function SuccessFallback() {
   return (
-    <div className="mx-auto flex max-w-md flex-col items-center gap-4 py-20 text-center">
-      <Loader2 className="size-8 animate-spin text-muted-foreground" />
-      <p className="text-sm font-medium">Confirming your payment…</p>
+    <div className="relative flex min-h-[70vh] flex-1 flex-col">
+      <div className="mx-auto flex w-full max-w-lg flex-1 flex-col items-center justify-center gap-5 px-4 py-16 text-center">
+        <p className="inline-flex items-center gap-2 text-sm font-semibold tracking-tight text-primary">
+          <Wrench aria-hidden="true" className="size-4" />
+          FixItNow
+        </p>
+        <Loader2 className="size-8 animate-spin text-primary" />
+        <p className="text-sm font-medium">Confirming your payment…</p>
+      </div>
     </div>
   );
 }
 
 export default function PaymentSuccessPage() {
   return (
-    <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-10 sm:px-6">
-      <Suspense fallback={<SuccessFallback />}>
-        <PaymentSuccessView />
-      </Suspense>
-    </main>
+    <Suspense fallback={<SuccessFallback />}>
+      <PaymentSuccessView />
+    </Suspense>
   );
 }

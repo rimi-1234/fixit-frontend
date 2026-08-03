@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { Wrench } from "lucide-react";
 
 import { PaymentCancelView } from "@/app/(publicGroup)/payment/cancel/_components/payment-cancel";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -10,18 +11,20 @@ export const metadata: Metadata = {
 
 export default function PaymentCancelPage() {
   return (
-    <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-10 sm:px-6">
-      <Suspense
-        fallback={
-          <div className="mx-auto max-w-md space-y-3 py-16">
-            <Skeleton className="mx-auto h-8 w-8 rounded-full" />
-            <Skeleton className="mx-auto h-5 w-40" />
-            <Skeleton className="mx-auto h-4 w-64" />
-          </div>
-        }
-      >
-        <PaymentCancelView />
-      </Suspense>
-    </main>
+    <Suspense
+      fallback={
+        <div className="mx-auto flex min-h-[70vh] w-full max-w-lg flex-col items-center justify-center gap-4 px-4 py-16">
+          <p className="inline-flex items-center gap-2 text-sm font-semibold tracking-tight text-primary">
+            <Wrench aria-hidden="true" className="size-4" />
+            FixItNow
+          </p>
+          <Skeleton className="size-16 rounded-full" />
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-4 w-72" />
+        </div>
+      }
+    >
+      <PaymentCancelView />
+    </Suspense>
   );
 }

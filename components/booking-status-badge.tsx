@@ -3,9 +3,7 @@ import type { BookingStatus } from "@/lib/types";
 
 export type { BookingStatus };
 
-// Deliberately limited to the app's semantic palette (warning / info / success /
-// destructive / primary / neutral) instead of a different hue per status, so the
-// badge palette stays disciplined and consistent with the rest of the UI.
+/** Spec-aligned status colors for the booking journey badges. */
 const STATUS_STYLES: Record<BookingStatus, { label: string; className: string }> = {
   REQUESTED: {
     label: "Requested",
@@ -21,7 +19,7 @@ const STATUS_STYLES: Record<BookingStatus, { label: string; className: string }>
   },
   PAID: {
     label: "Paid",
-    className: "bg-primary/10 text-primary",
+    className: "bg-[oklch(0.94_0.04_300)] text-[oklch(0.42_0.16_300)] dark:bg-[oklch(0.28_0.06_300)] dark:text-[oklch(0.82_0.08_300)]",
   },
   IN_PROGRESS: {
     label: "In progress",
@@ -33,7 +31,7 @@ const STATUS_STYLES: Record<BookingStatus, { label: string; className: string }>
   },
   CANCELLED: {
     label: "Cancelled",
-    className: "bg-destructive/15 text-destructive",
+    className: "bg-[oklch(0.94_0.04_20)] text-[oklch(0.38_0.14_20)] dark:bg-[oklch(0.28_0.06_20)] dark:text-[oklch(0.78_0.08_20)]",
   },
 };
 

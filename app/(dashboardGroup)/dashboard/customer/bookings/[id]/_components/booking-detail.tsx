@@ -2,9 +2,11 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { Loader2, Star } from "lucide-react";
 
 import { ReviewForm } from "@/app/(dashboardGroup)/dashboard/customer/_components/review-form";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { BookingStatusBadge } from "@/components/booking-status-badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
@@ -13,6 +15,7 @@ import { useBooking, useCancelBooking } from "@/hooks/use-bookings";
 import type { BookingStatus } from "@/lib/types";
 import { formatCurrency } from "@/utils/format-currency";
 import { formatDateTime } from "@/utils/format-date";
+import { displayNameFromEmail } from "@/utils/display-name";
 
 const CANCELLABLE: BookingStatus[] = ["REQUESTED", "ACCEPTED", "PAID"];
 
@@ -20,6 +23,8 @@ export function BookingDetailView({ bookingId }: { bookingId: string }) {
   const router = useRouter();
   const { data: booking, isLoading, isError, refetch } = useBooking(bookingId);
   const cancelBooking = useCancelBooking();
+  const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
 
   if (isLoading) {
     return (
@@ -59,17 +64,34 @@ export function BookingDetailView({ bookingId }: { bookingId: string }) {
 
   async function handleCancel() {
     if (!booking) return;
-    if (!confirm("Cancel this booking? This can't be undone.")) return;
+    setCancelling(true);
     try {
       await cancelBooking.mutateAsync(booking.id);
+      setCancelOpen(false);
       router.refresh();
     } catch {
       // toast in mutation
+    } finally {
+      setCancelling(false);
     }
   }
 
   return (
     <div className="mx-auto max-w-2xl space-y-8">
+      <ConfirmDialog
+        open={cancelOpen}
+        onOpenChange={(open) => {
+          if (!cancelling) setCancelOpen(open);
+        }}
+        title="Cancel this booking?"
+        description="This can't be undone. Your technician will be notified that the booking was cancelled."
+        confirmLabel="Cancel booking"
+        cancelLabel="Keep booking"
+        tone="danger"
+        loading={cancelling}
+        onConfirm={handleCancel}
+      />
+
       <div className="space-y-3">
         <Button
           variant="ghost"
@@ -95,7 +117,7 @@ export function BookingDetailView({ bookingId }: { bookingId: string }) {
         <div className="flex justify-between gap-4 py-4">
           <dt className="text-sm text-muted-foreground">Technician</dt>
           <dd className="text-sm font-medium">
-            {booking.technician?.email ?? "—"}
+            {displayNameFromEmail(booking.technician?.email)}
           </dd>
         </div>
         <div className="flex justify-between gap-4 py-4">
@@ -152,6 +174,7 @@ export function BookingDetailView({ bookingId }: { bookingId: string }) {
       <div className="flex flex-wrap gap-2">
         {canPay ? (
           <Button
+            className="rounded-full"
             nativeButton={false}
             render={
               <Link href={`/dashboard/customer/bookings/${booking.id}/pay`} />
@@ -164,7 +187,8 @@ export function BookingDetailView({ bookingId }: { bookingId: string }) {
         {canCancel ? (
           <Button
             variant="destructive"
-            onClick={handleCancel}
+            className="rounded-full"
+            onClick={() => setCancelOpen(true)}
             disabled={cancelBooking.isPending}
           >
             {cancelBooking.isPending ? (

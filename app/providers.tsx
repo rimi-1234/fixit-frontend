@@ -13,7 +13,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(() => makeQueryClient());
 
   return (
-    <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
       {/* "user" respects prefers-reduced-motion automatically across every animation. */}
       <MotionConfig reducedMotion="user">
         <QueryClientProvider client={queryClient}>

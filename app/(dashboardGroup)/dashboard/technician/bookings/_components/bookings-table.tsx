@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { CalendarDays, Loader2 } from "lucide-react";
 
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { BookingStatusBadge } from "@/components/booking-status-badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
@@ -25,6 +26,7 @@ import type { TechnicianBookingActionStatus } from "@/service/technician.service
 import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/utils/format-currency";
 import { formatDateTime } from "@/utils/format-date";
+import { displayNameFromEmail } from "@/utils/display-name";
 
 type StatusFilter = "ALL" | "REQUESTED" | "ACTIVE" | "DONE";
 
@@ -37,6 +39,12 @@ const FILTERS: { id: StatusFilter; label: string }[] = [
 
 const ACTIVE: BookingStatus[] = ["ACCEPTED", "PAID", "IN_PROGRESS"];
 const DONE: BookingStatus[] = ["COMPLETED", "DECLINED", "CANCELLED"];
+
+type PendingConfirm = {
+  bookingId: string;
+  status: TechnicianBookingActionStatus;
+  serviceName?: string;
+};
 
 function matchesFilter(booking: Booking, filter: StatusFilter) {
   if (filter === "ALL") return true;
@@ -65,6 +73,37 @@ function actionsFor(status: BookingStatus): {
   }
 }
 
+function confirmCopy(pending: PendingConfirm | null) {
+  if (!pending) {
+    return {
+      title: "",
+      description: "",
+      confirmLabel: "Confirm",
+      tone: "default" as const,
+    };
+  }
+
+  if (pending.status === "DECLINED") {
+    return {
+      title: "Decline this request?",
+      description: pending.serviceName
+        ? `“${pending.serviceName}” will be declined and the customer will be notified.`
+        : "This booking request will be declined and the customer will be notified.",
+      confirmLabel: "Decline booking",
+      tone: "danger" as const,
+    };
+  }
+
+  return {
+    title: "Mark job as completed?",
+    description: pending.serviceName
+      ? `Confirm that “${pending.serviceName}” is finished. The customer can then leave a review.`
+      : "Confirm that this job is finished. The customer can then leave a review.",
+    confirmLabel: "Mark completed",
+    tone: "success" as const,
+  };
+}
+
 export function TechnicianBookingsTable() {
   const {
     data: bookings,
@@ -75,6 +114,8 @@ export function TechnicianBookingsTable() {
   const updateStatus = useUpdateTechnicianBookingStatus();
   const [filter, setFilter] = useState<StatusFilter>("ALL");
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const [confirm, setConfirm] = useState<PendingConfirm | null>(null);
+  const [confirming, setConfirming] = useState(false);
 
   const list = useMemo(() => {
     const all = bookings ?? [];
@@ -88,29 +129,63 @@ export function TechnicianBookingsTable() {
       );
   }, [bookings, filter]);
 
-  async function handleAction(
+  const copy = confirmCopy(confirm);
+
+  async function runAction(
     bookingId: string,
     status: TechnicianBookingActionStatus
   ) {
-    if (status === "DECLINED") {
-      if (!confirm("Decline this booking request?")) return;
-    }
-    if (status === "COMPLETED") {
-      if (!confirm("Mark this job as completed?")) return;
-    }
-
     setPendingId(bookingId);
     try {
       await updateStatus.mutateAsync({ bookingId, status });
     } catch {
-      // toast in mutation (surfaces backend transition errors)
+      // toast in mutation
     } finally {
       setPendingId(null);
     }
   }
 
+  function handleAction(
+    booking: Booking,
+    status: TechnicianBookingActionStatus
+  ) {
+    if (status === "DECLINED" || status === "COMPLETED") {
+      setConfirm({
+        bookingId: booking.id,
+        status,
+        serviceName: booking.service?.name,
+      });
+      return;
+    }
+    void runAction(booking.id, status);
+  }
+
+  async function handleConfirm() {
+    if (!confirm) return;
+    setConfirming(true);
+    try {
+      await runAction(confirm.bookingId, confirm.status);
+      setConfirm(null);
+    } finally {
+      setConfirming(false);
+    }
+  }
+
   return (
     <div className="mx-auto max-w-6xl space-y-8">
+      <ConfirmDialog
+        open={Boolean(confirm)}
+        onOpenChange={(open) => {
+          if (!open && !confirming) setConfirm(null);
+        }}
+        title={copy.title}
+        description={copy.description}
+        confirmLabel={copy.confirmLabel}
+        tone={copy.tone}
+        loading={confirming}
+        onConfirm={handleConfirm}
+      />
+
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
@@ -123,6 +198,7 @@ export function TechnicianBookingsTable() {
         <Button
           variant="outline"
           size="sm"
+          className="rounded-full"
           nativeButton={false}
           render={<Link href="/dashboard/technician" />}
         >
@@ -137,7 +213,7 @@ export function TechnicianBookingsTable() {
             type="button"
             onClick={() => setFilter(item.id)}
             className={cn(
-              "rounded-lg px-3 py-1.5 text-sm font-medium transition-colors",
+              "rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors",
               filter === item.id
                 ? "bg-primary text-primary-foreground"
                 : "bg-muted/60 text-muted-foreground hover:text-foreground"
@@ -176,7 +252,6 @@ export function TechnicianBookingsTable() {
         />
       ) : (
         <>
-          {/* Mobile list */}
           <ul className="divide-y divide-border/60 md:hidden">
             {list.map((booking) => {
               const actions = actionsFor(booking.status);
@@ -194,7 +269,7 @@ export function TechnicianBookingsTable() {
                       {formatDateTime(booking.scheduledTime)}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      {booking.customer?.email ?? "Customer"}
+                      {displayNameFromEmail(booking.customer?.email)}
                       {typeof booking.service?.price === "number"
                         ? ` · ${formatCurrency(booking.service.price)}`
                         : ""}
@@ -206,17 +281,13 @@ export function TechnicianBookingsTable() {
                         <Button
                           key={action.status}
                           size="sm"
+                          className="rounded-full"
                           variant={action.variant ?? "default"}
                           disabled={busy}
-                          onClick={() =>
-                            handleAction(booking.id, action.status)
-                          }
+                          onClick={() => handleAction(booking, action.status)}
                         >
                           {busy ? (
-                            <Loader2
-                              className="animate-spin"
-                              aria-hidden="true"
-                            />
+                            <Loader2 className="animate-spin" aria-hidden="true" />
                           ) : null}
                           {action.label}
                         </Button>
@@ -232,7 +303,6 @@ export function TechnicianBookingsTable() {
             })}
           </ul>
 
-          {/* Desktop table */}
           <div className="hidden md:block">
             <Table>
               <TableHeader>
@@ -255,7 +325,7 @@ export function TechnicianBookingsTable() {
                         {booking.service?.name ?? "Service"}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
-                        {booking.customer?.email ?? "—"}
+                        {displayNameFromEmail(booking.customer?.email)}
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-muted-foreground">
                         {formatDateTime(booking.scheduledTime)}
@@ -275,10 +345,11 @@ export function TechnicianBookingsTable() {
                               <Button
                                 key={action.status}
                                 size="sm"
+                                className="rounded-full"
                                 variant={action.variant ?? "default"}
                                 disabled={busy}
                                 onClick={() =>
-                                  handleAction(booking.id, action.status)
+                                  handleAction(booking, action.status)
                                 }
                               >
                                 {busy ? (

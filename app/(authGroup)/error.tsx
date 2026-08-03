@@ -4,29 +4,26 @@ import { useEffect } from "react";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/use-auth";
-import { dashboardPathForRole } from "@/lib/auth-token";
 
-export default function DashboardError({
+export default function AuthError({
   error,
   reset,
 }: {
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  const { role } = useAuth();
-  const dashboardHref = role ? dashboardPathForRole(role) : "/";
-
   useEffect(() => {
     console.error(error);
   }, [error]);
 
   return (
-    <div className="mx-auto flex max-w-lg flex-col items-start gap-4 py-16">
+    <div className="mx-auto flex max-w-md flex-col items-start gap-4 py-8">
       <p className="text-sm font-medium text-primary">FixItNow</p>
-      <h2 className="text-xl font-semibold tracking-tight">Something went wrong</h2>
+      <h2 className="text-xl font-semibold tracking-tight">
+        Couldn&apos;t load this form
+      </h2>
       <p className="text-sm text-muted-foreground">
-        {error.message || "This dashboard view failed to load."}
+        {error.message || "Something went wrong while loading sign-in."}
       </p>
       <div className="flex flex-wrap gap-2">
         <Button className="rounded-full" onClick={reset}>
@@ -36,9 +33,9 @@ export default function DashboardError({
           variant="outline"
           className="rounded-full"
           nativeButton={false}
-          render={<Link href={dashboardHref} />}
+          render={<Link href="/" />}
         >
-          Back to dashboard
+          Back to home
         </Button>
       </div>
     </div>

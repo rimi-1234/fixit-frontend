@@ -10,6 +10,7 @@ export interface RegisterPayload {
   hourlyRate?: number;
   bio?: string;
   location?: string;
+  imageUrl?: string | null;
 }
 
 export interface LoginPayload {

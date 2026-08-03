@@ -17,6 +17,7 @@ export interface CreateServicePayload {
   description: string;
   price: number;
   categoryId: string;
+  imageUrl?: string | null;
 }
 
 export type UpdateServicePayload = Partial<CreateServicePayload>;

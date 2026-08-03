@@ -5,6 +5,7 @@ import { useState } from "react";
 import { FolderTree, Pencil, Plus, Trash2 } from "lucide-react";
 
 import { CategoryFormDialog } from "@/app/(dashboardGroup)/dashboard/admin/categories/_components/category-form-dialog";
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -28,6 +29,8 @@ export function AdminCategoriesManager() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Category | null>(null);
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Category | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const categories = data ?? [];
 
@@ -41,27 +44,35 @@ export function AdminCategoriesManager() {
     setDialogOpen(true);
   }
 
-  async function handleDelete(category: Category) {
-    if (
-      !confirm(
-        `Delete “${category.name}”? Services using it may become uncategorized or fail validation.`
-      )
-    ) {
-      return;
-    }
-
-    setPendingId(category.id);
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    setPendingId(deleteTarget.id);
     try {
-      await deleteCategory.mutateAsync(category.id);
+      await deleteCategory.mutateAsync(deleteTarget.id);
+      setDeleteTarget(null);
     } catch {
       // toast in mutation
     } finally {
+      setDeleting(false);
       setPendingId(null);
     }
   }
 
   return (
     <div className="mx-auto max-w-3xl space-y-8">
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        onOpenChange={(open) => {
+          if (!open && !deleting) setDeleteTarget(null);
+        }}
+        title={`Delete “${deleteTarget?.name ?? "category"}”?`}
+        description="Services using it may become uncategorized or fail validation."
+        confirmLabel="Delete category"
+        tone="danger"
+        loading={deleting}
+        onConfirm={handleDelete}
+      />
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
@@ -146,7 +157,7 @@ export function AdminCategoriesManager() {
                       variant="destructive"
                       size="sm"
                       disabled={busy}
-                      onClick={() => handleDelete(category)}
+                      onClick={() => setDeleteTarget(category)}
                     >
                       <Trash2 aria-hidden="true" />
                       Delete
@@ -193,7 +204,7 @@ export function AdminCategoriesManager() {
                             variant="destructive"
                             size="sm"
                             disabled={busy}
-                            onClick={() => handleDelete(category)}
+                            onClick={() => setDeleteTarget(category)}
                           >
                             <Trash2 aria-hidden="true" />
                             Delete

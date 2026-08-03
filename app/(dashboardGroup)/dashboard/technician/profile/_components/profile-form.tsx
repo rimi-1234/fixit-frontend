@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { ExternalLink, Loader2 } from "lucide-react";
 
+import { TechnicianAvatarPicker } from "@/components/technician-avatar-picker";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
 import { Input } from "@/components/ui/input";
@@ -19,6 +20,7 @@ import {
   useUpdateTechnicianProfile,
 } from "@/hooks/use-technicians";
 import { applyApiFieldErrors } from "@/utils/apply-api-field-errors";
+import { TECHNICIAN_AVATAR_PRESETS } from "@/utils/technician-images";
 
 const profileSchema = z.object({
   skillsText: z
@@ -48,6 +50,18 @@ const profileSchema = z.object({
     }, "Enter a valid hourly rate"),
   location: z.string().max(120, "Keep location under 120 characters").optional(),
   bio: z.string().max(1000, "Keep bio under 1000 characters").optional(),
+  imageUrl: z
+    .string()
+    .trim()
+    .refine(
+      (value) =>
+        value === "" ||
+        value.startsWith("/") ||
+        value.startsWith("data:image/") ||
+        /^https?:\/\//i.test(value),
+      "Enter a valid image URL, path, or upload a photo"
+    )
+    .optional(),
 });
 
 type ProfileFormValues = z.infer<typeof profileSchema>;
@@ -67,6 +81,8 @@ export function TechnicianProfileForm() {
     handleSubmit,
     reset,
     setError,
+    setValue,
+    control,
     formState: { errors, isSubmitting, isDirty },
   } = useForm<ProfileFormValues>({
     resolver: zodResolver(profileSchema),
@@ -76,21 +92,24 @@ export function TechnicianProfileForm() {
       hourlyRate: "",
       location: "",
       bio: "",
+      imageUrl: TECHNICIAN_AVATAR_PRESETS[0].url,
     },
   });
 
   const profile = technician?.technicianProfile;
+  const imageUrl = useWatch({ control, name: "imageUrl" }) ?? "";
 
   useEffect(() => {
-    if (!profile) return;
+    if (!profile && !technician) return;
     reset({
-      skillsText: profile.skills?.join(", ") ?? "",
-      experience: String(profile.experience ?? ""),
-      hourlyRate: String(profile.hourlyRate ?? ""),
-      location: profile.location ?? "",
-      bio: profile.bio ?? "",
+      skillsText: profile?.skills?.join(", ") ?? "",
+      experience: String(profile?.experience ?? ""),
+      hourlyRate: String(profile?.hourlyRate ?? ""),
+      location: profile?.location ?? "",
+      bio: profile?.bio ?? "",
+      imageUrl: profile?.imageUrl ?? TECHNICIAN_AVATAR_PRESETS[0].url,
     });
-  }, [profile, reset]);
+  }, [profile, technician, reset]);
 
   const onSubmit = handleSubmit(async (values) => {
     const skills = values.skillsText
@@ -105,6 +124,7 @@ export function TechnicianProfileForm() {
         hourlyRate: Number(values.hourlyRate),
         location: values.location?.trim() || undefined,
         bio: values.bio?.trim() || undefined,
+        imageUrl: values.imageUrl?.trim() || null,
       });
       reset({
         skillsText: skills.join(", "),
@@ -112,6 +132,7 @@ export function TechnicianProfileForm() {
         hourlyRate: values.hourlyRate,
         location: values.location ?? "",
         bio: values.bio ?? "",
+        imageUrl: values.imageUrl ?? "",
       });
     } catch (error) {
       applyApiFieldErrors(error, setError, "Failed to update profile");
@@ -164,7 +185,7 @@ export function TechnicianProfileForm() {
             Profile
           </h1>
           <p className="text-sm text-muted-foreground">
-            Skills, rate, and location appear on your public technician page.
+            Photo, skills, rate, and location appear on your public technician page.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3 text-sm">
@@ -195,6 +216,14 @@ export function TechnicianProfileForm() {
             No profile yet — save these details to create one.
           </p>
         ) : null}
+
+        <TechnicianAvatarPicker
+          value={imageUrl}
+          onChange={(url) =>
+            setValue("imageUrl", url, { shouldDirty: true, shouldValidate: true })
+          }
+          error={errors.imageUrl?.message}
+        />
 
         <div className="space-y-1.5">
           <Label htmlFor="skillsText">Skills</Label>
@@ -276,6 +305,7 @@ export function TechnicianProfileForm() {
         <div className="flex flex-wrap gap-2 pt-1">
           <Button
             type="submit"
+            className="rounded-full"
             disabled={isSubmitting || updateProfile.isPending || !isDirty}
           >
             {isSubmitting || updateProfile.isPending ? (
@@ -290,6 +320,7 @@ export function TechnicianProfileForm() {
           <Button
             type="button"
             variant="outline"
+            className="rounded-full"
             nativeButton={false}
             render={<Link href="/dashboard/technician" />}
           >

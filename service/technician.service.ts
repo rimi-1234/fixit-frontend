@@ -22,6 +22,7 @@ export interface UpdateTechnicianProfilePayload {
   hourlyRate?: number;
   bio?: string;
   location?: string;
+  imageUrl?: string | null;
 }
 
 export type TechnicianBookingActionStatus = Extract<

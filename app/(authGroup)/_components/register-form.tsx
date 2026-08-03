@@ -9,12 +9,15 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { RoleToggle } from "@/app/(authGroup)/_components/role-toggle";
+import { PasswordInput } from "@/components/password-input";
+import { TechnicianAvatarPicker } from "@/components/technician-avatar-picker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/use-auth";
 import { applyApiFieldErrors } from "@/utils/apply-api-field-errors";
+import { TECHNICIAN_AVATAR_PRESETS } from "@/utils/technician-images";
 
 const registerSchema = z
   .object({
@@ -26,6 +29,18 @@ const registerSchema = z
     hourlyRate: z.string().optional(),
     bio: z.string().optional(),
     location: z.string().optional(),
+    imageUrl: z
+      .string()
+      .trim()
+      .refine(
+        (value) =>
+          value === "" ||
+          value.startsWith("/") ||
+          value.startsWith("data:image/") ||
+          /^https?:\/\//i.test(value),
+        "Enter a valid image URL, path, or upload a photo"
+      )
+      .optional(),
   })
   .superRefine((data, ctx) => {
     if (data.role !== "TECHNICIAN") return;
@@ -43,7 +58,12 @@ const registerSchema = z
     }
 
     const experience = Number(data.experience);
-    if (data.experience === undefined || data.experience === "" || Number.isNaN(experience) || experience < 0) {
+    if (
+      data.experience === undefined ||
+      data.experience === "" ||
+      Number.isNaN(experience) ||
+      experience < 0
+    ) {
       ctx.addIssue({
         code: "custom",
         path: ["experience"],
@@ -77,6 +97,7 @@ export function RegisterForm() {
     handleSubmit,
     control,
     setError,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<RegisterFormValues>({
     resolver: zodResolver(registerSchema),
@@ -89,10 +110,12 @@ export function RegisterForm() {
       hourlyRate: "",
       bio: "",
       location: "",
+      imageUrl: TECHNICIAN_AVATAR_PRESETS[0].url,
     },
   });
 
   const role = useWatch({ control, name: "role" });
+  const imageUrl = useWatch({ control, name: "imageUrl" }) ?? "";
 
   const onSubmit = handleSubmit(async (values) => {
     try {
@@ -112,6 +135,7 @@ export function RegisterForm() {
               hourlyRate: Number(values.hourlyRate),
               bio: values.bio || undefined,
               location: values.location || undefined,
+              imageUrl: values.imageUrl?.trim() || null,
             }
           : {}),
       });
@@ -146,6 +170,7 @@ export function RegisterForm() {
           type="email"
           autoComplete="email"
           placeholder="you@example.com"
+          className="h-11"
           aria-invalid={Boolean(errors.email)}
           {...register("email")}
         />
@@ -156,9 +181,8 @@ export function RegisterForm() {
 
       <div className="space-y-1.5">
         <Label htmlFor="password">Password</Label>
-        <Input
+        <PasswordInput
           id="password"
-          type="password"
           autoComplete="new-password"
           placeholder="At least 6 characters"
           aria-invalid={Boolean(errors.password)}
@@ -174,6 +198,14 @@ export function RegisterForm() {
           <p className="text-sm text-muted-foreground">
             Tell customers what you offer. Skills, experience, and rate are required.
           </p>
+
+          <TechnicianAvatarPicker
+            value={imageUrl}
+            onChange={(url) =>
+              setValue("imageUrl", url, { shouldDirty: true, shouldValidate: true })
+            }
+            error={errors.imageUrl?.message}
+          />
 
           <div className="space-y-1.5">
             <Label htmlFor="skillsText">Skills</Label>
@@ -205,7 +237,7 @@ export function RegisterForm() {
               ) : null}
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="hourlyRate">Hourly rate</Label>
+              <Label htmlFor="hourlyRate">Hourly rate (৳)</Label>
               <Input
                 id="hourlyRate"
                 type="number"
@@ -250,7 +282,12 @@ export function RegisterForm() {
         </div>
       ) : null}
 
-      <Button type="submit" className="w-full" disabled={isSubmitting} size="lg">
+      <Button
+        type="submit"
+        className="h-11 w-full rounded-full"
+        disabled={isSubmitting}
+        size="lg"
+      >
         {isSubmitting ? (
           <>
             <Loader2 className="animate-spin" aria-hidden="true" />
@@ -263,7 +300,10 @@ export function RegisterForm() {
 
       <p className="text-center text-sm text-muted-foreground">
         Already have an account?{" "}
-        <Link href="/login" className="font-medium text-primary underline-offset-4 hover:underline">
+        <Link
+          href="/login"
+          className="font-medium text-primary underline-offset-4 hover:underline"
+        >
           Sign in
         </Link>
       </p>

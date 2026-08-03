@@ -198,16 +198,45 @@ export function AvailabilityManager() {
           Availability
         </h1>
         <p className="text-sm text-muted-foreground">
-          Build weekly slots customers can book against. Saved as strings like{" "}
-          <span className="font-medium text-foreground">Monday 9AM-5PM</span>.
+          Interactive weekly scheduler — click a day, set hours, and save. Book Now
+          only offers times inside these windows.
         </p>
+      </div>
+
+      <div className="grid grid-cols-7 gap-1.5 sm:gap-2">
+        {WEEKDAYS.map((weekday) => {
+          const count = slots.filter((slot) => slot.weekday === weekday).length;
+          const active = day === weekday;
+          return (
+            <button
+              key={`chip-${weekday}`}
+              type="button"
+              onClick={() => setDay(weekday)}
+              className={`rounded-xl px-1 py-2 text-center transition sm:px-2 ${
+                active
+                  ? "bg-primary text-primary-foreground"
+                  : count > 0
+                    ? "bg-success/15 text-success"
+                    : "bg-muted/70 text-muted-foreground hover:text-foreground"
+              }`}
+              aria-pressed={active}
+            >
+              <span className="block text-[10px] font-semibold tracking-wide uppercase sm:text-xs">
+                {weekday.slice(0, 3)}
+              </span>
+              <span className="mt-1 block text-[10px] sm:text-xs">
+                {count > 0 ? `${count} slot${count === 1 ? "" : "s"}` : "—"}
+              </span>
+            </button>
+          );
+        })}
       </div>
 
       <section className="space-y-4 border-y border-border/60 py-6">
         <div className="space-y-1">
           <h2 className="text-lg font-semibold tracking-tight">Add a slot</h2>
           <p className="text-sm text-muted-foreground">
-            Pick a weekday and working window, then add it to your list.
+            Selected day: <span className="font-medium text-foreground">{day}</span>
           </p>
         </div>
 

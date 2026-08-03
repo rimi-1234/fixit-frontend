@@ -51,6 +51,7 @@ export interface TechnicianProfile {
   hourlyRate: number;
   bio: string | null;
   location: string | null;
+  imageUrl?: string | null;
   availability: string[];
   createdAt: string;
   updatedAt: string;
@@ -77,6 +78,7 @@ export interface Service {
   name: string;
   description: string;
   price: number;
+  imageUrl?: string | null;
   categoryId: string;
   technicianId: string;
   category: Category;

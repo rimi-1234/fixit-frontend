@@ -1,11 +1,13 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { Loader2 } from "lucide-react";
+import { ImagePlus, Loader2 } from "lucide-react";
 
+import { OptimizedImageUpload } from "@/components/optimized-image-upload";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -23,7 +25,13 @@ import {
   useUpdateService,
 } from "@/hooks/use-services";
 import type { Category, Service } from "@/lib/types";
+import { cn } from "@/lib/utils";
 import { applyApiFieldErrors } from "@/utils/apply-api-field-errors";
+import { isValidImageRef, shouldUnoptimizeImage } from "@/utils/image-src";
+import {
+  SERVICE_IMAGE_PRESETS,
+  imageForCategory,
+} from "@/utils/service-images";
 
 const serviceSchema = z.object({
   name: z.string().trim().min(2, "Name must be at least 2 characters"),
@@ -39,6 +47,10 @@ const serviceSchema = z.object({
       return !Number.isNaN(n) && n >= 0;
     }, "Enter a valid price"),
   categoryId: z.string().min(1, "Choose a category"),
+  imageUrl: z
+    .string()
+    .trim()
+    .refine(isValidImageRef, "Enter a valid image URL, path, or upload a photo"),
 });
 
 type ServiceFormValues = z.infer<typeof serviceSchema>;
@@ -63,6 +75,8 @@ export function ServiceFormDialog({
     handleSubmit,
     reset,
     setError,
+    setValue,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<ServiceFormValues>({
     resolver: zodResolver(serviceSchema),
@@ -71,8 +85,15 @@ export function ServiceFormDialog({
       description: "",
       price: "",
       categoryId: "",
+      imageUrl: "",
     },
   });
+
+  const imageUrl = useWatch({ control, name: "imageUrl" });
+  const categoryId = useWatch({ control, name: "categoryId" });
+  const selectedCategory = categories.find((c) => c.id === categoryId);
+  const previewSrc =
+    imageUrl || imageForCategory(selectedCategory?.name) || SERVICE_IMAGE_PRESETS[0].url;
 
   useEffect(() => {
     if (!open) return;
@@ -83,12 +104,14 @@ export function ServiceFormDialog({
             description: service.description,
             price: String(service.price),
             categoryId: service.categoryId,
+            imageUrl: service.imageUrl ?? "",
           }
         : {
             name: "",
             description: "",
             price: "",
             categoryId: categories[0]?.id ?? "",
+            imageUrl: imageForCategory(categories[0]?.name),
           }
     );
   }, [open, service, categories, reset]);
@@ -101,6 +124,7 @@ export function ServiceFormDialog({
       description: values.description.trim(),
       price: Number(values.price),
       categoryId: values.categoryId,
+      imageUrl: values.imageUrl.trim() || null,
     };
 
     try {
@@ -117,7 +141,7 @@ export function ServiceFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md" showCloseButton>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-lg" showCloseButton>
         <DialogHeader>
           <DialogTitle>{isEdit ? "Edit service" : "Add service"}</DialogTitle>
           <DialogDescription>
@@ -128,10 +152,93 @@ export function ServiceFormDialog({
         </DialogHeader>
 
         <form id="service-form" onSubmit={onSubmit} className="space-y-4" noValidate>
+          <div className="space-y-2">
+            <Label>Cover image</Label>
+            <div className="relative aspect-[16/9] overflow-hidden rounded-2xl bg-muted">
+              <Image
+                src={previewSrc}
+                alt=""
+                fill
+                sizes="480px"
+                className="object-cover"
+                unoptimized={shouldUnoptimizeImage(previewSrc)}
+              />
+              <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-foreground/25 via-transparent to-transparent" />
+              <span className="absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-full bg-background/90 px-2.5 py-1 text-xs font-medium backdrop-blur-sm">
+                <ImagePlus aria-hidden="true" className="size-3.5" />
+                Preview
+              </span>
+            </div>
+
+            <OptimizedImageUpload
+              label="Upload cover photo"
+              optimize={{ maxWidth: 1400, maxHeight: 900, quality: 0.8 }}
+              onUploaded={(url) =>
+                setValue("imageUrl", url, {
+                  shouldDirty: true,
+                  shouldValidate: true,
+                })
+              }
+              disabled={pending}
+            />
+
+            <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+              {SERVICE_IMAGE_PRESETS.map((preset) => {
+                const selected = imageUrl === preset.url;
+                return (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    onClick={() =>
+                      setValue("imageUrl", preset.url, {
+                        shouldDirty: true,
+                        shouldValidate: true,
+                      })
+                    }
+                    className={cn(
+                      "relative aspect-square overflow-hidden rounded-xl ring-offset-background transition",
+                      selected
+                        ? "ring-2 ring-primary ring-offset-2"
+                        : "ring-1 ring-border/70 hover:ring-primary/40"
+                    )}
+                    aria-label={`Use ${preset.label} image`}
+                    aria-pressed={selected}
+                  >
+                    <Image
+                      src={preset.url}
+                      alt=""
+                      fill
+                      sizes="80px"
+                      className="object-cover"
+                    />
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="service-image">Or paste image URL</Label>
+              <Input
+                id="service-image"
+                placeholder="https://images.unsplash.com/…"
+                aria-invalid={Boolean(errors.imageUrl)}
+                {...register("imageUrl")}
+              />
+              {errors.imageUrl ? (
+                <p className="text-sm text-destructive">{errors.imageUrl.message}</p>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Upload a photo, pick a preset, or paste a public link.
+                </p>
+              )}
+            </div>
+          </div>
+
           <div className="space-y-1.5">
             <Label htmlFor="service-name">Name</Label>
             <Input
               id="service-name"
+              className="h-11"
               placeholder="AC deep clean"
               aria-invalid={Boolean(errors.name)}
               {...register("name")}
@@ -146,8 +253,19 @@ export function ServiceFormDialog({
             <select
               id="service-category"
               aria-invalid={Boolean(errors.categoryId)}
-              className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
-              {...register("categoryId")}
+              className="h-11 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
+              {...register("categoryId", {
+                onChange: (event) => {
+                  const next = categories.find((c) => c.id === event.target.value);
+                  const current = imageUrl;
+                  const isPreset = SERVICE_IMAGE_PRESETS.some((p) => p.url === current);
+                  if (!current || isPreset) {
+                    setValue("imageUrl", imageForCategory(next?.name), {
+                      shouldDirty: true,
+                    });
+                  }
+                },
+              })}
             >
               <option value="">Select category</option>
               {categories.map((category) => (
@@ -167,6 +285,7 @@ export function ServiceFormDialog({
             <Label htmlFor="service-price">Price (৳)</Label>
             <Input
               id="service-price"
+              className="h-11"
               type="number"
               min={0}
               step="0.01"
@@ -201,12 +320,18 @@ export function ServiceFormDialog({
           <Button
             type="button"
             variant="outline"
+            className="rounded-full"
             onClick={() => onOpenChange(false)}
             disabled={pending}
           >
             Cancel
           </Button>
-          <Button type="submit" form="service-form" disabled={pending}>
+          <Button
+            type="submit"
+            form="service-form"
+            className="rounded-full"
+            disabled={pending}
+          >
             {pending ? (
               <>
                 <Loader2 className="animate-spin" aria-hidden="true" />

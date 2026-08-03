@@ -1,16 +1,21 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { BookingStatusBadge } from "@/components/booking-status-badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
 import { Reveal, RevealGroup, RevealItem } from "@/components/motion/reveal";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useMyBookings } from "@/hooks/use-bookings";
-import type { Booking } from "@/lib/types";
+import { useCancelBooking, useMyBookings } from "@/hooks/use-bookings";
+import type { Booking, BookingStatus } from "@/lib/types";
 import { formatCurrency } from "@/utils/format-currency";
 import { formatDateTime } from "@/utils/format-date";
+import { displayNameFromEmail } from "@/utils/display-name";
+
+const CANCELLABLE: BookingStatus[] = ["REQUESTED", "ACCEPTED", "PAID"];
 
 function bookingAction(booking: Booking) {
   if (booking.status === "ACCEPTED") {
@@ -27,17 +32,51 @@ function bookingAction(booking: Booking) {
 
 export function CustomerBookingsPage() {
   const { data, isLoading, isError, refetch } = useMyBookings();
+  const cancelBooking = useCancelBooking();
   const list = data ?? [];
+  const [cancelTarget, setCancelTarget] = useState<Booking | null>(null);
+  const [cancelling, setCancelling] = useState(false);
+
+  async function handleCancel() {
+    if (!cancelTarget) return;
+    setCancelling(true);
+    try {
+      await cancelBooking.mutateAsync(cancelTarget.id);
+      setCancelTarget(null);
+    } catch {
+      // toast in mutation
+    } finally {
+      setCancelling(false);
+    }
+  }
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
+      <ConfirmDialog
+        open={Boolean(cancelTarget)}
+        onOpenChange={(open) => {
+          if (!open && !cancelling) setCancelTarget(null);
+        }}
+        title="Cancel this booking?"
+        description={
+          cancelTarget?.service?.name
+            ? `“${cancelTarget.service.name}” will be cancelled. This can't be undone.`
+            : "This booking will be cancelled. This can't be undone."
+        }
+        confirmLabel="Cancel booking"
+        cancelLabel="Keep booking"
+        tone="danger"
+        loading={cancelling}
+        onConfirm={handleCancel}
+      />
+
       <Reveal className="flex flex-wrap items-end justify-between gap-3">
         <div className="space-y-1">
           <h2 className="text-xl font-semibold tracking-tight sm:text-2xl">
             Your bookings
           </h2>
           <p className="text-sm text-muted-foreground">
-            Track requests, payments, and reviews in one place.
+            Track requests, payments, and reviews. Cancel is available before a job starts.
           </p>
         </div>
         <Button
@@ -77,9 +116,10 @@ export function CustomerBookingsPage() {
             }
           />
         ) : (
-          <RevealGroup as="ul" className="divide-y divide-border/60">
+          <RevealGroup as="ul" animate="visible" className="divide-y divide-border/60">
             {list.map((booking) => {
               const action = bookingAction(booking);
+              const canCancel = CANCELLABLE.includes(booking.status);
               return (
                 <RevealItem
                   key={booking.id}
@@ -96,7 +136,7 @@ export function CustomerBookingsPage() {
                     <p className="text-sm text-muted-foreground">
                       {formatDateTime(booking.scheduledTime)}
                       {booking.technician?.email
-                        ? ` · ${booking.technician.email}`
+                        ? ` · ${displayNameFromEmail(booking.technician.email)}`
                         : ""}
                     </p>
                     {typeof booking.service?.price === "number" ? (
@@ -105,15 +145,27 @@ export function CustomerBookingsPage() {
                       </p>
                     ) : null}
                   </div>
-                  <Button
-                    variant={booking.status === "ACCEPTED" ? "default" : "outline"}
-                    size="sm"
-                    className="rounded-full"
-                    nativeButton={false}
-                    render={<Link href={action.href} />}
-                  >
-                    {action.label}
-                  </Button>
+                  <div className="flex flex-wrap gap-2">
+                    {canCancel ? (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="rounded-full"
+                        onClick={() => setCancelTarget(booking)}
+                      >
+                        Cancel
+                      </Button>
+                    ) : null}
+                    <Button
+                      variant={booking.status === "ACCEPTED" ? "default" : "outline"}
+                      size="sm"
+                      className="rounded-full"
+                      nativeButton={false}
+                      render={<Link href={action.href} />}
+                    >
+                      {action.label}
+                    </Button>
+                  </div>
                 </RevealItem>
               );
             })}

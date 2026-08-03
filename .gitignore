@@ -20,6 +20,10 @@
 # production
 /build
 
+# uploaded images (kept local; use .gitkeep via folder)
+/public/uploads/*
+!/public/uploads/.gitkeep
+
 # misc
 .DS_Store
 *.pem

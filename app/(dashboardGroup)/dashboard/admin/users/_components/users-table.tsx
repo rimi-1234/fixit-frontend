@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Loader2, Search, Users } from "lucide-react";
 
+import { ConfirmDialog } from "@/components/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
 import { Input } from "@/components/ui/input";
@@ -60,6 +61,10 @@ export function AdminUsersTable() {
   const [role, setRole] = useState<RoleFilter>("ALL");
   const [status, setStatus] = useState<StatusFilter>("ALL");
   const [pendingId, setPendingId] = useState<string | null>(null);
+  const [banTarget, setBanTarget] = useState<User | null>(null);
+  const [banning, setBanning] = useState(false);
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
 
   const debouncedSearch = useDebouncedValue(search.trim());
 
@@ -75,16 +80,19 @@ export function AdminUsersTable() {
   const { data, isLoading, isError, isFetching, refetch } = useAdminUsers(filters);
   const updateStatus = useUpdateUserStatus();
   const users = data ?? [];
+  const totalPages = Math.max(1, Math.ceil(users.length / pageSize));
+  const currentPage = Math.min(page, totalPages);
+  const pagedUsers = users.slice(
+    (currentPage - 1) * pageSize,
+    currentPage * pageSize
+  );
 
   async function toggleStatus(user: User) {
     const next: UserStatus = user.status === "ACTIVE" ? "BANNED" : "ACTIVE";
 
-    if (user.role === "ADMIN" && next === "BANNED") {
-      if (!confirm("Ban an admin account? They will lose access immediately.")) {
-        return;
-      }
-    } else if (next === "BANNED") {
-      if (!confirm(`Ban ${user.email}?`)) return;
+    if (next === "BANNED") {
+      setBanTarget(user);
+      return;
     }
 
     setPendingId(user.id);
@@ -97,8 +105,45 @@ export function AdminUsersTable() {
     }
   }
 
+  async function confirmBan() {
+    if (!banTarget) return;
+    setBanning(true);
+    setPendingId(banTarget.id);
+    try {
+      await updateStatus.mutateAsync({ userId: banTarget.id, status: "BANNED" });
+      setBanTarget(null);
+    } catch {
+      // toast in mutation
+    } finally {
+      setBanning(false);
+      setPendingId(null);
+    }
+  }
+
   return (
-    <div className="mx-auto max-w-6xl space-y-8">
+    <>
+      <ConfirmDialog
+        open={Boolean(banTarget)}
+        onOpenChange={(open) => {
+          if (!open && !banning) setBanTarget(null);
+        }}
+        title={
+          banTarget?.role === "ADMIN"
+            ? "Ban an admin account?"
+            : `Ban ${banTarget?.email ?? "this user"}?`
+        }
+        description={
+          banTarget?.role === "ADMIN"
+            ? "They will lose access immediately. Only do this if you intend to lock them out."
+            : "They won’t be able to sign in until an admin reactivates the account."
+        }
+        confirmLabel="Ban user"
+        tone="danger"
+        loading={banning}
+        onConfirm={confirmBan}
+      />
+
+      <div className="mx-auto max-w-6xl space-y-8">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="space-y-1">
           <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
@@ -129,7 +174,10 @@ export function AdminUsersTable() {
             <Input
               id="user-search"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
               placeholder="Email…"
               className="pl-8"
             />
@@ -141,7 +189,10 @@ export function AdminUsersTable() {
           <select
             id="user-role"
             value={role}
-            onChange={(e) => setRole(e.target.value as RoleFilter)}
+            onChange={(e) => {
+              setRole(e.target.value as RoleFilter);
+              setPage(1);
+            }}
             className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
           >
             <option value="ALL">All roles</option>
@@ -156,7 +207,10 @@ export function AdminUsersTable() {
           <select
             id="user-status"
             value={status}
-            onChange={(e) => setStatus(e.target.value as StatusFilter)}
+            onChange={(e) => {
+              setStatus(e.target.value as StatusFilter);
+              setPage(1);
+            }}
             className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
           >
             <option value="ALL">All statuses</option>
@@ -192,12 +246,15 @@ export function AdminUsersTable() {
         <>
           <p className="text-sm text-muted-foreground">
             {users.length} user{users.length === 1 ? "" : "s"}
+            {users.length > pageSize
+              ? ` · page ${currentPage} of ${totalPages}`
+              : ""}
             {isFetching ? " · refreshing…" : ""}
           </p>
 
           {/* Mobile */}
           <ul className="divide-y divide-border/60 md:hidden">
-            {users.map((user) => {
+            {pagedUsers.map((user) => {
               const busy = pendingId === user.id;
               return (
                 <li key={user.id} className="space-y-3 py-4">
@@ -249,7 +306,7 @@ export function AdminUsersTable() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users.map((user) => {
+                {pagedUsers.map((user) => {
                   const busy = pendingId === user.id;
                   return (
                     <TableRow key={user.id}>
@@ -295,8 +352,40 @@ export function AdminUsersTable() {
               </TableBody>
             </Table>
           </div>
+
+          {users.length > pageSize ? (
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+              <p className="text-sm text-muted-foreground">
+                Showing {(currentPage - 1) * pageSize + 1}–
+                {Math.min(currentPage * pageSize, users.length)} of {users.length}
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="rounded-full"
+                  disabled={currentPage <= 1}
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                >
+                  Previous
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="rounded-full"
+                  disabled={currentPage >= totalPages}
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                >
+                  Next
+                </Button>
+              </div>
+            </div>
+          ) : null}
         </>
       )}
     </div>
+    </>
   );
 }

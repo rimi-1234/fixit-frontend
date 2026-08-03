@@ -39,7 +39,11 @@ export function middleware(request: NextRequest) {
   const role = isRole(roleCookie) ? roleCookie : null;
   const isLoggedIn = Boolean(token && role);
 
-  const isAuthPage = pathname === "/login" || pathname === "/register";
+  const isAuthPage =
+    pathname === "/login" ||
+    pathname === "/register" ||
+    pathname === "/auth/login" ||
+    pathname === "/auth/register";
   const isDashboard = pathname.startsWith("/dashboard");
 
   if (isAuthPage && isLoggedIn && role) {
@@ -75,5 +79,11 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/login", "/register"],
+  matcher: [
+    "/dashboard/:path*",
+    "/login",
+    "/register",
+    "/auth/login",
+    "/auth/register",
+  ],
 };
