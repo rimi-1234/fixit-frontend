@@ -44,18 +44,9 @@ export function imageForCategory(name?: string) {
   return SERVICE_IMAGE_PRESETS[5].url;
 }
 
-/** Runtime /uploads paths only work in local dev — not on Vercel. */
+/** Old local disk uploads — these paths are not available after deploy. */
 export function isEphemeralUploadPath(src?: string | null) {
-  const value = src?.trim() ?? "";
-  if (!value.startsWith("/uploads/")) return false;
-
-  if (typeof window !== "undefined") {
-    const host = window.location.hostname;
-    if (host === "localhost" || host === "127.0.0.1") return false;
-    return true;
-  }
-
-  return Boolean(process.env.VERCEL) || process.env.NODE_ENV === "production";
+  return Boolean(src?.trim().startsWith("/uploads/"));
 }
 
 export function serviceImageUrl(service: {

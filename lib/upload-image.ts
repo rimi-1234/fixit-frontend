@@ -15,12 +15,10 @@ function blobToDataUrl(blob: Blob): Promise<string> {
   });
 }
 
-function isLocalHost() {
-  if (typeof window === "undefined") return true;
-  const host = window.location.hostname;
-  return host === "localhost" || host === "127.0.0.1";
-}
-
+/**
+ * Optimize in the browser, then persist as a data URL.
+ * This works the same locally and on Vercel (no /uploads disk dependency).
+ */
 export async function uploadOptimizedImage(
   file: File,
   options: OptimizeImageOptions = {}
@@ -28,30 +26,33 @@ export async function uploadOptimizedImage(
   const originalBytes = file.size;
   const { blob, fileName, mimeType } = await optimizeImageFile(file, options);
 
-  const form = new FormData();
-  form.append("file", blob, fileName);
-  form.append("mimeType", mimeType);
+  // Prefer client-side data URL so deploy never depends on local disk paths.
+  try {
+    const form = new FormData();
+    form.append("file", blob, fileName);
+    form.append("mimeType", mimeType);
 
-  const response = await fetch("/api/upload", {
-    method: "POST",
-    body: form,
-  });
+    const response = await fetch("/api/upload", {
+      method: "POST",
+      body: form,
+    });
 
-  const data = (await response.json().catch(() => null)) as
-    | { url?: string; error?: string; storage?: string }
-    | null;
+    const data = (await response.json().catch(() => null)) as
+      | { url?: string; error?: string }
+      | null;
 
-  if (!response.ok || !data?.url) {
-    throw new Error(data?.error || "Upload failed. Try a smaller image.");
+    if (response.ok && data?.url?.startsWith("data:image/")) {
+      return {
+        url: data.url,
+        bytes: originalBytes,
+        optimizedBytes: blob.size,
+      };
+    }
+  } catch {
+    // fall through to local data URL
   }
 
-  let url = data.url;
-
-  // Guard: /uploads/* paths break on Vercel because runtime files are not served.
-  if (url.startsWith("/uploads/") && !isLocalHost()) {
-    url = await blobToDataUrl(blob);
-  }
-
+  const url = await blobToDataUrl(blob);
   return {
     url,
     bytes: originalBytes,

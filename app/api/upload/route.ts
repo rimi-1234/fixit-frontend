@@ -1,6 +1,3 @@
-import { mkdir, writeFile } from "fs/promises";
-import path from "path";
-import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 
 export const runtime = "nodejs";
@@ -8,22 +5,11 @@ export const runtime = "nodejs";
 const MAX_BYTES = 1_200_000; // ~1.2MB after client optimization
 const ALLOWED = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 
-function extFor(mime: string) {
-  if (mime === "image/png") return "png";
-  if (mime === "image/webp") return "webp";
-  if (mime === "image/gif") return "gif";
-  return "jpg";
-}
-
-function toDataUrl(mime: string, bytes: Buffer) {
-  return `data:${mime};base64,${bytes.toString("base64")}`;
-}
-
-/** Vercel (and similar) cannot serve files written at runtime under /public. */
-function canPersistToPublic() {
-  return !process.env.VERCEL && process.env.NODE_ENV !== "production";
-}
-
+/**
+ * Always return an inline data URL.
+ * Disk paths like /uploads/... only exist on the machine that uploaded them,
+ * so they break after Vercel deploy (and when local UI talks to a remote API).
+ */
 export async function POST(request: Request) {
   try {
     const form = await request.formData();
@@ -49,27 +35,10 @@ export async function POST(request: Request) {
     }
 
     const bytes = Buffer.from(await file.arrayBuffer());
-
-    // Local dev only: write into public/uploads so URLs stay short.
-    // On Vercel, runtime writes are not served — always return an inline data URL.
-    if (canPersistToPublic()) {
-      try {
-        const name = `${randomUUID()}.${extFor(mime)}`;
-        const dir = path.join(process.cwd(), "public", "uploads");
-        await mkdir(dir, { recursive: true });
-        await writeFile(path.join(dir, name), bytes);
-        return NextResponse.json({
-          url: `/uploads/${name}`,
-          bytes: bytes.length,
-          storage: "disk",
-        });
-      } catch {
-        // fall through to inline
-      }
-    }
+    const url = `data:${mime};base64,${bytes.toString("base64")}`;
 
     return NextResponse.json({
-      url: toDataUrl(mime, bytes),
+      url,
       bytes: bytes.length,
       storage: "inline",
     });
