@@ -83,9 +83,19 @@ export function googleAuthApiBases() {
 }
 
 export function appOrigin(request: Request) {
+  const requestOrigin = new URL(request.url).origin;
   const configured = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
-  if (configured) return configured;
-  return new URL(request.url).origin;
+  if (!configured) return requestOrigin;
+
+  const configuredIsLocal =
+    configured.includes("localhost") || configured.includes("127.0.0.1");
+  const requestIsDeployed =
+    !requestOrigin.includes("localhost") && !requestOrigin.includes("127.0.0.1");
+
+  // Avoid sending production users to localhost when env was copied from local dev.
+  if (configuredIsLocal && requestIsDeployed) return requestOrigin;
+
+  return configured;
 }
 
 export function googleRedirectUri(request: Request) {
