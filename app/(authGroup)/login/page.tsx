@@ -3,7 +3,6 @@ import { Suspense } from "react";
 import { Wrench } from "lucide-react";
 
 import { LoginForm } from "@/app/(authGroup)/_components/login-form";
-import { Reveal } from "@/components/motion/reveal";
 
 export const metadata: Metadata = {
   title: "Sign in",
@@ -11,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function LoginPage() {
   return (
-    <Reveal className="space-y-8">
+    <div className="space-y-8">
       <div className="space-y-4">
         <p className="inline-flex items-center gap-2 text-sm font-semibold tracking-tight text-primary">
           <Wrench aria-hidden="true" className="size-4" />
@@ -26,11 +25,9 @@ export default function LoginPage() {
           </p>
         </div>
       </div>
-      <Suspense
-        fallback={<div className="h-48 animate-pulse rounded-2xl bg-muted/70" />}
-      >
+      <Suspense fallback={<div className="h-48 animate-pulse rounded-2xl bg-muted/70" />}>
         <LoginForm />
       </Suspense>
-    </Reveal>
+    </div>
   );
 }

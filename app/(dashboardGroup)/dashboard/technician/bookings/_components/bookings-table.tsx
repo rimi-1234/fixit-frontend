@@ -8,6 +8,7 @@ import { ConfirmDialog } from "@/components/confirm-dialog";
 import { BookingStatusBadge } from "@/components/booking-status-badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
+import { PaginationBar } from "@/components/pagination-bar";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -21,6 +22,7 @@ import {
   useTechnicianBookings,
   useUpdateTechnicianBookingStatus,
 } from "@/hooks/use-technicians";
+import { usePagination } from "@/hooks/use-pagination";
 import type { Booking, BookingStatus } from "@/lib/types";
 import type { TechnicianBookingActionStatus } from "@/service/technician.service";
 import { cn } from "@/lib/utils";
@@ -129,6 +131,8 @@ export function TechnicianBookingsTable() {
       );
   }, [bookings, filter]);
 
+  const { page, setPage, totalPages, paged } = usePagination(list, 8);
+
   const copy = confirmCopy(confirm);
 
   async function runAction(
@@ -211,7 +215,10 @@ export function TechnicianBookingsTable() {
           <button
             key={item.id}
             type="button"
-            onClick={() => setFilter(item.id)}
+            onClick={() => {
+              setFilter(item.id);
+              setPage(1);
+            }}
             className={cn(
               "rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors",
               filter === item.id
@@ -253,7 +260,7 @@ export function TechnicianBookingsTable() {
       ) : (
         <>
           <ul className="divide-y divide-border/60 lg:hidden">
-            {list.map((booking) => {
+            {paged.map((booking) => {
               const actions = actionsFor(booking.status);
               const busy = pendingId === booking.id;
               return (
@@ -316,7 +323,7 @@ export function TechnicianBookingsTable() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {list.map((booking) => {
+                {paged.map((booking) => {
                   const actions = actionsFor(booking.status);
                   const busy = pendingId === booking.id;
                   return (
@@ -376,6 +383,7 @@ export function TechnicianBookingsTable() {
               </TableBody>
             </Table>
           </div>
+          <PaginationBar page={page} totalPages={totalPages} onPageChange={setPage} />
         </>
       )}
     </div>

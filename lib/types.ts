@@ -60,6 +60,9 @@ export interface TechnicianProfile {
 export interface User {
   id: string;
   email: string;
+  name?: string | null;
+  phone?: string | null;
+  imageUrl?: string | null;
   role: Role;
   status: UserStatus;
   createdAt: string;
@@ -136,6 +139,9 @@ export interface Booking {
 export interface AuthUser {
   id: string;
   email: string;
+  name?: string | null;
+  phone?: string | null;
+  imageUrl?: string | null;
   role: Role;
   status: UserStatus;
 }

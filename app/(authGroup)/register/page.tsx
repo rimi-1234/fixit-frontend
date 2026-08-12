@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { Wrench } from "lucide-react";
 
 import { RegisterForm } from "@/app/(authGroup)/_components/register-form";
-import { Reveal } from "@/components/motion/reveal";
 
 export const metadata: Metadata = {
   title: "Create account",
@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function RegisterPage() {
   return (
-    <Reveal className="space-y-8">
+    <div className="space-y-8">
       <div className="space-y-4">
         <p className="inline-flex items-center gap-2 text-sm font-semibold tracking-tight text-primary">
           <Wrench aria-hidden="true" className="size-4" />
@@ -25,7 +25,9 @@ export default function RegisterPage() {
           </p>
         </div>
       </div>
-      <RegisterForm />
-    </Reveal>
+      <Suspense fallback={<div className="h-48 animate-pulse rounded-2xl bg-muted/70" />}>
+        <RegisterForm />
+      </Suspense>
+    </div>
   );
 }

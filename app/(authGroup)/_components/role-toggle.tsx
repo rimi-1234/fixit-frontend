@@ -1,5 +1,7 @@
 "use client";
 
+import { motion } from "motion/react";
+
 import { cn } from "@/lib/utils";
 
 type RegisterRole = "CUSTOMER" | "TECHNICIAN";
@@ -28,13 +30,20 @@ export function RoleToggle({
           type="button"
           onClick={() => onChange(option.id)}
           className={cn(
-            "rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+            "relative rounded-lg px-3 py-2 text-sm font-medium transition-colors",
             value === option.id
-              ? "bg-background text-foreground shadow-sm"
+              ? "text-foreground"
               : "text-muted-foreground hover:text-foreground"
           )}
         >
-          {option.label}
+          {value === option.id ? (
+            <motion.span
+              layoutId="role-toggle-pill"
+              className="absolute inset-0 rounded-lg bg-background shadow-sm"
+              transition={{ type: "spring", stiffness: 420, damping: 32 }}
+            />
+          ) : null}
+          <span className="relative z-10">{option.label}</span>
         </button>
       ))}
     </div>

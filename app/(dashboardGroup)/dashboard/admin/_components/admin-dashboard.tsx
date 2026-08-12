@@ -10,6 +10,19 @@ import {
   Users,
   Wrench,
 } from "lucide-react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  Legend,
+} from "recharts";
 
 import { StatTile } from "@/app/(dashboardGroup)/dashboard/_components/stat-tile";
 import { BookingStatusBadge } from "@/components/booking-status-badge";
@@ -69,6 +82,25 @@ export function AdminDashboard() {
       )
       .slice(0, 6);
 
+    // Booking status breakdown for pie chart
+    const statusCounts: Record<string, number> = {};
+    for (const b of bookingList) {
+      statusCounts[b.status] = (statusCounts[b.status] ?? 0) + 1;
+    }
+    const statusData = Object.entries(statusCounts).map(([name, value]) => ({ name, value }));
+
+    // Last 7 days bookings bar chart
+    const now = Date.now();
+    const weekData = Array.from({ length: 7 }).map((_, i) => {
+      const d = new Date(now - (6 - i) * 86400000);
+      const label = d.toLocaleDateString(undefined, { weekday: "short" });
+      const count = bookingList.filter((b) => {
+        const bd = new Date(b.createdAt);
+        return bd.toDateString() === d.toDateString();
+      }).length;
+      return { day: label, bookings: count };
+    });
+
     return {
       totalUsers: userList.length,
       customers,
@@ -79,6 +111,8 @@ export function AdminDashboard() {
       completed,
       revenue,
       recent,
+      statusData,
+      weekData,
     };
   }, [users, bookings]);
 
@@ -172,6 +206,48 @@ export function AdminDashboard() {
               </>
             )}
           </RevealGroup>
+
+          {/* Charts row */}
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* Weekly bookings bar chart */}
+            <div className="rounded-2xl border border-border/60 bg-card p-5 shadow-sm">
+              <h2 className="mb-4 text-sm font-semibold tracking-tight">Bookings — last 7 days</h2>
+              {isLoading ? (
+                <div className="h-48 w-full animate-pulse rounded-xl bg-muted" />
+              ) : (
+                <ResponsiveContainer width="100%" height={180}>
+                  <BarChart data={stats.weekData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                    <XAxis dataKey="day" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+                    <Tooltip />
+                    <Bar dataKey="bookings" fill="var(--primary)" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+
+            {/* Booking status pie chart */}
+            <div className="rounded-2xl border border-border/60 bg-card p-5 shadow-sm">
+              <h2 className="mb-4 text-sm font-semibold tracking-tight">Booking status distribution</h2>
+              {isLoading ? (
+                <div className="h-48 w-full animate-pulse rounded-xl bg-muted" />
+              ) : stats.statusData.length === 0 ? (
+                <div className="flex h-48 items-center justify-center text-sm text-muted-foreground">No bookings yet</div>
+              ) : (
+                <ResponsiveContainer width="100%" height={180}>
+                  <PieChart>
+                    <Pie data={stats.statusData} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} label={({ name, percent }) => `${name} ${Math.round(percent * 100)}%`} labelLine={false} fontSize={10}>
+                      {stats.statusData.map((_, i) => (
+                        <Cell key={i} fill={["#6366f1","#22c55e","#f59e0b","#ef4444","#3b82f6","#a855f7","#ec4899"][i % 7]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                  </PieChart>
+                </ResponsiveContainer>
+              )}
+            </div>
+          </div>
 
           <section className="space-y-3 border-y border-border/60 py-5">
             <div className="space-y-1">

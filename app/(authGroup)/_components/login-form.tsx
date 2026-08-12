@@ -8,6 +8,8 @@ import { z } from "zod";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
+import { DemoRoleLogin } from "@/app/(authGroup)/_components/demo-role-login";
+import { SocialLoginButtons } from "@/app/(authGroup)/_components/social-login-buttons";
 import { PasswordInput } from "@/components/password-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,7 +28,7 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { login } = useAuth();
+  const { login, isAuthenticated, isHydrated, role, goToDashboard } = useAuth();
 
   const {
     register,
@@ -55,62 +57,80 @@ export function LoginForm() {
   });
 
   return (
-    <form onSubmit={onSubmit} className="space-y-5" noValidate>
-      <div className="space-y-2">
-        <Label htmlFor="email">Email</Label>
-        <Input
-          id="email"
-          type="email"
-          autoComplete="email"
-          placeholder="you@example.com"
-          className="h-11"
-          aria-invalid={Boolean(errors.email)}
-          {...register("email")}
-        />
-        {errors.email ? (
-          <p className="text-sm text-destructive">{errors.email.message}</p>
-        ) : null}
-      </div>
+    <div className="space-y-6">
+      {isHydrated && isAuthenticated ? (
+        <div className="rounded-2xl border border-border/60 bg-card p-4 text-sm">
+          <p className="font-medium">You are already signed in.</p>
+          <Button
+            className="mt-3 w-full rounded-full"
+            type="button"
+            onClick={() => goToDashboard(role ?? undefined)}
+          >
+            Go to dashboard
+          </Button>
+        </div>
+      ) : null}
 
-      <div className="space-y-2">
-        <Label htmlFor="password">Password</Label>
-        <PasswordInput
-          id="password"
-          autoComplete="current-password"
-          placeholder="••••••••"
-          aria-invalid={Boolean(errors.password)}
-          {...register("password")}
-        />
-        {errors.password ? (
-          <p className="text-sm text-destructive">{errors.password.message}</p>
-        ) : null}
-      </div>
+      <form onSubmit={onSubmit} className="space-y-5" noValidate>
+        <div className="space-y-2">
+          <Label htmlFor="email">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            autoComplete="email"
+            placeholder="you@example.com"
+            className="h-11 transition-shadow duration-200 focus-visible:shadow-[0_0_0_4px_oklch(0.47_0.19_264/0.12)]"
+            aria-invalid={Boolean(errors.email)}
+            {...register("email")}
+          />
+          {errors.email ? (
+            <p className="text-sm text-destructive">{errors.email.message}</p>
+          ) : null}
+        </div>
 
-      <Button
-        type="submit"
-        className="mt-1 h-11 w-full rounded-full"
-        disabled={isSubmitting}
-        size="lg"
-      >
-        {isSubmitting ? (
-          <>
-            <Loader2 className="animate-spin" aria-hidden="true" />
-            Signing in…
-          </>
-        ) : (
-          "Sign in"
-        )}
-      </Button>
+        <div className="space-y-2">
+          <Label htmlFor="password">Password</Label>
+          <PasswordInput
+            id="password"
+            autoComplete="current-password"
+            placeholder="••••••••"
+            aria-invalid={Boolean(errors.password)}
+            {...register("password")}
+          />
+          {errors.password ? (
+            <p className="text-sm text-destructive">{errors.password.message}</p>
+          ) : null}
+        </div>
 
-      <p className="text-center text-sm text-muted-foreground">
-        New here?{" "}
-        <Link
-          href="/register"
-          className="font-medium text-primary underline-offset-4 hover:underline"
+        <Button
+          type="submit"
+          className="mt-1 h-11 w-full rounded-full transition-transform duration-200 hover:scale-[1.01] active:scale-[0.98]"
+          disabled={isSubmitting}
+          size="lg"
         >
-          Create an account
-        </Link>
-      </p>
-    </form>
+          {isSubmitting ? (
+            <>
+              <Loader2 className="animate-spin" aria-hidden="true" />
+              Signing in…
+            </>
+          ) : (
+            "Sign in"
+          )}
+        </Button>
+
+        <p className="text-center text-sm text-muted-foreground">
+          New here?{" "}
+          <Link
+            href="/register"
+            className="font-medium text-primary underline-offset-4 transition-colors hover:underline"
+          >
+            Create an account
+          </Link>
+        </p>
+      </form>
+
+      <SocialLoginButtons />
+      <DemoRoleLogin />
+    </div>
   );
 }

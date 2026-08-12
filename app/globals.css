@@ -191,4 +191,24 @@
   .page-container {
     @apply mx-auto w-full max-w-6xl px-4 sm:px-6;
   }
+
+  .partners-marquee {
+    animation: partners-marquee 42s linear infinite;
+    will-change: transform;
+  }
+}
+
+@keyframes partners-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .partners-marquee {
+    animation: none;
+  }
 }

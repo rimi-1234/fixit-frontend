@@ -45,11 +45,16 @@ export function Reveal<T extends Tag = "div">({
   ...props
 }: RevealProps<T>) {
   const MotionTag = TAGS[(as ?? "div") as Tag] as ElementType;
+  const usesWhileInView = props.animate === undefined && props.whileInView === undefined;
   return (
     <MotionTag
       initial="hidden"
-      whileInView="visible"
-      viewport={{ once: true, margin: "-60px" }}
+      {...(usesWhileInView
+        ? {
+            whileInView: "visible",
+            viewport: { once: true, amount: 0.01, margin: "0px" },
+          }
+        : {})}
       variants={fadeUp}
       {...props}
     >

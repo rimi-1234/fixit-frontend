@@ -8,7 +8,11 @@ import { useAuthStore } from "@/lib/auth-store";
 import { dashboardPathForRole } from "@/lib/auth-token";
 import { authService } from "@/service/auth.service";
 import type { AuthUser, LoginResult, Role, User } from "@/lib/types";
-import type { LoginPayload, RegisterPayload } from "@/service/auth.service";
+import type {
+  DemoLoginPayload,
+  LoginPayload,
+  RegisterPayload,
+} from "@/service/auth.service";
 
 /**
  * Hydrate session from cookies, then refresh the user via GET /auth/me.
@@ -71,6 +75,12 @@ export function useAuth() {
     return result;
   }
 
+  async function demoLogin(payload: DemoLoginPayload): Promise<LoginResult> {
+    const result = await authService.demoLogin(payload);
+    setSession(result.accessToken, result.user);
+    return result;
+  }
+
   async function register(payload: RegisterPayload): Promise<LoginResult> {
     const result = await authService.register(payload);
     setSession(result.accessToken, result.user);
@@ -98,6 +108,7 @@ export function useAuth() {
     isHydrated,
     isAuthenticated,
     login,
+    demoLogin,
     register,
     logout,
     goToDashboard,

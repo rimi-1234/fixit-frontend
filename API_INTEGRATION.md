@@ -17,6 +17,7 @@ Frontend consumes the FixItNowPro API via typed wrappers in `service/*.ts` and T
 | Frontend | Endpoint | Auth |
 |---|---|---|
 | `login-form.tsx` | `POST /auth/login` | Public |
+| `demo-role-login.tsx` | `POST /api/auth/demo-login` (Next BFF → API `/auth/demo-login` or `/auth/login`) | Public |
 | `register-form.tsx` | `POST /auth/register` | Public |
 | `use-auth.ts` / `auth-hydrator.tsx` | `GET /auth/me` | Bearer |
 | Logout (navbar / dashboard shell) | Client cookie clear only | — |
@@ -73,7 +74,7 @@ Frontend consumes the FixItNowPro API via typed wrappers in `service/*.ts` and T
 
 | Service | Hook | Endpoints wrapped |
 |---|---|---|
-| `auth.service.ts` | `use-auth.ts` | `/auth/register`, `/auth/login`, `/auth/me` |
+| `auth.service.ts` | `use-auth.ts` | `/auth/register`, `/auth/login`, `/auth/demo-login`, `/auth/me` |
 | `service.service.ts` | `use-services.ts` | `GET/POST/PATCH/DELETE /services` |
 | `category.service.ts` | `use-categories.ts` | `GET /categories` (public filters) |
 | `technician.service.ts` | `use-technicians.ts` | `/technicians`, `/technicians/:id`, profile, availability, bookings |
@@ -90,6 +91,7 @@ Frontend consumes the FixItNowPro API via typed wrappers in `service/*.ts` and T
 |---|---|---|
 | Auth | `POST /auth/register` | Yes |
 | Auth | `POST /auth/login` | Yes |
+| Auth | `POST /auth/demo-login` | Yes |
 | Auth | `GET /auth/me` | Yes |
 | Services | `GET /services` | Yes |
 | Services | `POST /services` | Yes (technician) |

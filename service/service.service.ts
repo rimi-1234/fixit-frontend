@@ -29,6 +29,13 @@ export const serviceService = {
     });
   },
 
+  getById(id: string) {
+    return apiFetch<Service & { related: Service[]; technician: { id: string; email: string; name?: string | null; technicianProfile: import("@/lib/types").TechnicianProfile | null; averageRating: number; reviewCount: number; reviews: Array<{ rating: number; comment: string | null; createdAt: string; customer: { id: string; email: string; name?: string | null } }> } }>(`/api/services/${id}`, {
+      skipAuth: true,
+      sameOrigin: true,
+    });
+  },
+
   create(payload: CreateServicePayload) {
     return apiFetch<Service>("/services", {
       method: "POST",

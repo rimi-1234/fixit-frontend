@@ -18,6 +18,10 @@ export interface LoginPayload {
   password: string;
 }
 
+export interface DemoLoginPayload {
+  role: Role;
+}
+
 export const authService = {
   register(payload: RegisterPayload) {
     return apiFetch<LoginResult>("/auth/register", {
@@ -35,7 +39,25 @@ export const authService = {
     });
   },
 
+  /** Signs into a seeded role account via Next.js BFF (credentials stay server-side). */
+  demoLogin(payload: DemoLoginPayload) {
+    return apiFetch<LoginResult>("/api/auth/demo-login", {
+      method: "POST",
+      body: payload,
+      skipAuth: true,
+      sameOrigin: true,
+    });
+  },
+
   me() {
-    return apiFetch<User>("/auth/me");
+    return apiFetch<User>("/api/auth/me", { sameOrigin: true });
+  },
+
+  updateProfile(payload: { name?: string | null; phone?: string | null; imageUrl?: string | null }) {
+    return apiFetch<User>("/api/auth/me", {
+      method: "PATCH",
+      body: payload,
+      sameOrigin: true,
+    });
   },
 };

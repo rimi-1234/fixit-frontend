@@ -13,7 +13,9 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PaginationBar } from "@/components/pagination-bar";
 import { RevealGroup, RevealItem } from "@/components/motion/reveal";
+import { usePagination } from "@/hooks/use-pagination";
 import { useTechnicians } from "@/hooks/use-technicians";
 import type { TechnicianFilters } from "@/service/technician.service";
 import { applyTechnicianFilters } from "@/utils/apply-technician-filters";
@@ -70,6 +72,8 @@ export function TechniciansBrowse() {
       (a, b) => (b.averageRating || 0) - (a.averageRating || 0)
     );
   }, [data, filters]);
+
+  const { page, setPage, totalPages, paged } = usePagination(technicians, 9);
 
   const hasFilters = Boolean(
     skill || location || minRating || minHourlyRate || maxHourlyRate
@@ -161,6 +165,7 @@ export function TechniciansBrowse() {
                 setMinRating("");
                 setMinHourlyRate("");
                 setMaxHourlyRate("");
+                setPage(1);
               }}
             >
               Clear filters
@@ -214,22 +219,25 @@ export function TechniciansBrowse() {
             }
           />
         ) : (
-          <RevealGroup
-            as="ul"
-            animate="visible"
-            className="grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-3"
-          >
-            {technicians.map((tech, index) => (
-              <RevealItem
-                key={tech.id}
-                as="li"
-                whileHover={{ y: -6 }}
-                transition={{ type: "spring", stiffness: 300, damping: 24 }}
-              >
-                <TechnicianCard tech={tech} index={index} />
-              </RevealItem>
-            ))}
-          </RevealGroup>
+          <>
+            <RevealGroup
+              as="ul"
+              animate="visible"
+              className="grid gap-x-8 gap-y-10 sm:grid-cols-2 lg:grid-cols-3"
+            >
+              {paged.map((tech, index) => (
+                <RevealItem
+                  key={tech.id}
+                  as="li"
+                  whileHover={{ y: -6 }}
+                  transition={{ type: "spring", stiffness: 300, damping: 24 }}
+                >
+                  <TechnicianCard tech={tech} index={index} />
+                </RevealItem>
+              ))}
+            </RevealGroup>
+            <PaginationBar page={page} totalPages={totalPages} onPageChange={setPage} />
+          </>
         )}
       </div>
 

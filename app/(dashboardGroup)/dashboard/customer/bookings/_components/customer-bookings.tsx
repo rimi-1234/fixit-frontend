@@ -7,10 +7,12 @@ import { ConfirmDialog } from "@/components/confirm-dialog";
 import { BookingStatusBadge } from "@/components/booking-status-badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
+import { PaginationBar } from "@/components/pagination-bar";
 import { Reveal, RevealGroup, RevealItem } from "@/components/motion/reveal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCancelBooking, useMyBookings } from "@/hooks/use-bookings";
 import { useBookingStatusToasts } from "@/hooks/use-booking-status-toasts";
+import { usePagination } from "@/hooks/use-pagination";
 import type { Booking, BookingStatus } from "@/lib/types";
 import { formatCurrency } from "@/utils/format-currency";
 import { formatDateTime } from "@/utils/format-date";
@@ -36,6 +38,7 @@ export function CustomerBookingsPage() {
   const { data, isLoading, isError, refetch } = useMyBookings();
   const cancelBooking = useCancelBooking();
   const list = data ?? [];
+  const { page, setPage, totalPages, paged } = usePagination(list, 8);
   const [cancelTarget, setCancelTarget] = useState<Booking | null>(null);
   const [cancelling, setCancelling] = useState(false);
 
@@ -118,60 +121,63 @@ export function CustomerBookingsPage() {
             }
           />
         ) : (
-          <RevealGroup as="ul" animate="visible" className="divide-y divide-border/60">
-            {list.map((booking) => {
-              const action = bookingAction(booking);
-              const canCancel = CANCELLABLE.includes(booking.status);
-              return (
-                <RevealItem
-                  key={booking.id}
-                  as="li"
-                  className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between"
-                >
-                  <div className="min-w-0 space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-medium tracking-tight">
-                        {booking.service?.name ?? "Service"}
+          <>
+            <RevealGroup as="ul" animate="visible" className="divide-y divide-border/60">
+              {paged.map((booking) => {
+                const action = bookingAction(booking);
+                const canCancel = CANCELLABLE.includes(booking.status);
+                return (
+                  <RevealItem
+                    key={booking.id}
+                    as="li"
+                    className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between"
+                  >
+                    <div className="min-w-0 space-y-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-medium tracking-tight">
+                          {booking.service?.name ?? "Service"}
+                        </p>
+                        <BookingStatusBadge status={booking.status} />
+                      </div>
+                      <p className="text-sm text-muted-foreground">
+                        {formatDateTime(booking.scheduledTime)}
+                        {booking.technician?.email
+                          ? ` · ${displayNameFromEmail(booking.technician.email)}`
+                          : ""}
                       </p>
-                      <BookingStatusBadge status={booking.status} />
+                      {typeof booking.service?.price === "number" ? (
+                        <p className="text-sm font-medium">
+                          {formatCurrency(booking.service.price)}
+                        </p>
+                      ) : null}
                     </div>
-                    <p className="text-sm text-muted-foreground">
-                      {formatDateTime(booking.scheduledTime)}
-                      {booking.technician?.email
-                        ? ` · ${displayNameFromEmail(booking.technician.email)}`
-                        : ""}
-                    </p>
-                    {typeof booking.service?.price === "number" ? (
-                      <p className="text-sm font-medium">
-                        {formatCurrency(booking.service.price)}
-                      </p>
-                    ) : null}
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {canCancel ? (
+                    <div className="flex flex-wrap gap-2">
+                      {canCancel ? (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="rounded-full"
+                          onClick={() => setCancelTarget(booking)}
+                        >
+                          Cancel
+                        </Button>
+                      ) : null}
                       <Button
-                        variant="outline"
+                        variant={booking.status === "ACCEPTED" ? "default" : "outline"}
                         size="sm"
                         className="rounded-full"
-                        onClick={() => setCancelTarget(booking)}
+                        nativeButton={false}
+                        render={<Link href={action.href} />}
                       >
-                        Cancel
+                        {action.label}
                       </Button>
-                    ) : null}
-                    <Button
-                      variant={booking.status === "ACCEPTED" ? "default" : "outline"}
-                      size="sm"
-                      className="rounded-full"
-                      nativeButton={false}
-                      render={<Link href={action.href} />}
-                    >
-                      {action.label}
-                    </Button>
-                  </div>
-                </RevealItem>
-              );
-            })}
-          </RevealGroup>
+                    </div>
+                  </RevealItem>
+                );
+              })}
+            </RevealGroup>
+            <PaginationBar page={page} totalPages={totalPages} onPageChange={setPage} />
+          </>
         )}
       </Reveal>
     </div>

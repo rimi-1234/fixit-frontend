@@ -11,6 +11,7 @@ import {
 import { StatTile } from "@/app/(dashboardGroup)/dashboard/_components/stat-tile";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
+import { PaginationBar } from "@/components/pagination-bar";
 import {
   Reveal,
   RevealGroup,
@@ -18,6 +19,7 @@ import {
 } from "@/components/motion/reveal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMyBookings } from "@/hooks/use-bookings";
+import { usePagination } from "@/hooks/use-pagination";
 import { displayNameFromEmail } from "@/utils/display-name";
 import { formatDateTime } from "@/utils/format-date";
 import { cn } from "@/lib/utils";
@@ -49,6 +51,7 @@ export function CustomerReviewsPage() {
   const list = data ?? [];
   const awaiting = list.filter((b) => b.status === "COMPLETED" && !b.review);
   const reviewed = list.filter((b) => Boolean(b.review));
+  const { page, setPage, totalPages, paged } = usePagination(reviewed, 6);
   const avgRating =
     reviewed.length > 0
       ? reviewed.reduce((sum, b) => sum + (b.review?.rating ?? 0), 0) /
@@ -237,7 +240,7 @@ export function CustomerReviewsPage() {
             />
           ) : (
             <RevealGroup as="ul" animate="visible" className="grid gap-3">
-              {reviewed.map((booking) => (
+              {paged.map((booking) => (
                 <RevealItem
                   key={booking.id}
                   as="li"
@@ -286,6 +289,9 @@ export function CustomerReviewsPage() {
               ))}
             </RevealGroup>
           )}
+          {!isLoading && reviewed.length > 0 ? (
+            <PaginationBar page={page} totalPages={totalPages} onPageChange={setPage} />
+          ) : null}
         </Reveal>
       </div>
     </div>

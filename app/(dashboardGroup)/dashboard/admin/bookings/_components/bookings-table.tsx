@@ -7,6 +7,7 @@ import { CalendarDays } from "lucide-react";
 import { BookingStatusBadge } from "@/components/booking-status-badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
+import { PaginationBar } from "@/components/pagination-bar";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -18,6 +19,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { useAdminBookings } from "@/hooks/use-admin";
+import { usePagination } from "@/hooks/use-pagination";
 import type { BookingStatus } from "@/lib/types";
 import { formatCurrency } from "@/utils/format-currency";
 import { formatDateTime } from "@/utils/format-date";
@@ -54,6 +56,8 @@ export function AdminBookingsTable() {
       );
   }, [data]);
 
+  const { page, setPage, totalPages, paged } = usePagination(bookings, 10);
+
   return (
     <div className="mx-auto max-w-6xl space-y-8">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -80,7 +84,10 @@ export function AdminBookingsTable() {
         <select
           id="booking-status"
           value={status}
-          onChange={(e) => setStatus(e.target.value as "" | BookingStatus)}
+          onChange={(e) => {
+            setStatus(e.target.value as "" | BookingStatus);
+            setPage(1);
+          }}
           className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
         >
           {STATUS_OPTIONS.map((option) => (
@@ -125,7 +132,7 @@ export function AdminBookingsTable() {
           </p>
 
           <ul className="divide-y divide-border/60 lg:hidden">
-            {bookings.map((booking) => (
+            {paged.map((booking) => (
               <li key={booking.id} className="space-y-2 py-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="font-medium tracking-tight">
@@ -166,7 +173,7 @@ export function AdminBookingsTable() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {bookings.map((booking) => (
+                {paged.map((booking) => (
                   <TableRow key={booking.id}>
                     <TableCell className="font-medium">
                       {booking.service?.name ?? "Service"}
@@ -202,6 +209,7 @@ export function AdminBookingsTable() {
               </TableBody>
             </Table>
           </div>
+          <PaginationBar page={page} totalPages={totalPages} onPageChange={setPage} />
         </>
       )}
     </div>

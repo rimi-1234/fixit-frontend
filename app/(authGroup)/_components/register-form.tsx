@@ -9,6 +9,8 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { RoleToggle } from "@/app/(authGroup)/_components/role-toggle";
+import { DemoRoleLogin } from "@/app/(authGroup)/_components/demo-role-login";
+import { SocialLoginButtons } from "@/app/(authGroup)/_components/social-login-buttons";
 import { PasswordInput } from "@/components/password-input";
 import { TechnicianAvatarPicker } from "@/components/technician-avatar-picker";
 import { Button } from "@/components/ui/button";
@@ -150,7 +152,8 @@ export function RegisterForm() {
   });
 
   return (
-    <form onSubmit={onSubmit} className="space-y-5" noValidate>
+    <div className="space-y-6">
+      <form onSubmit={onSubmit} className="space-y-5" noValidate>
       <div className="space-y-2">
         <Label>I want to join as</Label>
         <Controller
@@ -310,5 +313,9 @@ export function RegisterForm() {
         </Link>
       </p>
     </form>
+
+      <SocialLoginButtons />
+      <DemoRoleLogin />
+    </div>
   );
 }

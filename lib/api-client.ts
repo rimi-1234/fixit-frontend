@@ -19,6 +19,8 @@ type ApiFetchOptions = Omit<RequestInit, "body"> & {
   skipAuth?: boolean;
   /** Optional token override (useful before cookie is written). */
   token?: string | null;
+  /** Call a same-origin Next.js route instead of the external API. */
+  sameOrigin?: boolean;
 };
 
 function getBaseUrl(): string {
@@ -32,8 +34,9 @@ function getBaseUrl(): string {
   return base.replace(/\/$/, "");
 }
 
-function buildUrl(path: string): string {
+function buildUrl(path: string, sameOrigin = false): string {
   const normalized = path.startsWith("/") ? path : `/${path}`;
+  if (sameOrigin) return normalized;
   return `${getBaseUrl()}${normalized}`;
 }
 
@@ -45,7 +48,14 @@ export async function apiFetch<T>(
   path: string,
   options: ApiFetchOptions = {}
 ): Promise<T> {
-  const { body, skipAuth = false, token, headers: initHeaders, ...rest } = options;
+  const {
+    body,
+    skipAuth = false,
+    token,
+    sameOrigin = false,
+    headers: initHeaders,
+    ...rest
+  } = options;
 
   const headers = new Headers(initHeaders);
   if (body !== undefined && !headers.has("Content-Type")) {
@@ -59,7 +69,7 @@ export async function apiFetch<T>(
     }
   }
 
-  const response = await fetch(buildUrl(path), {
+  const response = await fetch(buildUrl(path, sameOrigin), {
     ...rest,
     headers,
     body: body === undefined ? undefined : JSON.stringify(body),

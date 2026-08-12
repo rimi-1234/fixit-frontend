@@ -12,6 +12,7 @@ import { StatTile } from "@/app/(dashboardGroup)/dashboard/_components/stat-tile
 import { PaymentStatusBadge } from "@/components/payment-status-badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
+import { PaginationBar } from "@/components/pagination-bar";
 import {
   Reveal,
   RevealGroup,
@@ -19,6 +20,7 @@ import {
 } from "@/components/motion/reveal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMyPayments } from "@/hooks/use-payments";
+import { usePagination } from "@/hooks/use-pagination";
 import type { PaymentProvider } from "@/lib/types";
 import { formatCurrency } from "@/utils/format-currency";
 import { formatDateTime } from "@/utils/format-date";
@@ -34,6 +36,7 @@ function providerLabel(provider?: PaymentProvider | string | null) {
 export function CustomerPaymentsPage() {
   const { data, isLoading, isError, refetch } = useMyPayments();
   const list = data ?? [];
+  const { page, setPage, totalPages, paged } = usePagination(list, 8);
 
   const completed = list.filter((p) => p.status === "COMPLETED");
   const pending = list.filter((p) => p.status === "PENDING");
@@ -151,12 +154,13 @@ export function CustomerPaymentsPage() {
             }
           />
         ) : (
-          <RevealGroup
-            as="ul"
-            animate="visible"
-            className="grid gap-3"
-          >
-            {list.map((payment) => (
+          <>
+            <RevealGroup
+              as="ul"
+              animate="visible"
+              className="grid gap-3"
+            >
+            {paged.map((payment) => (
               <RevealItem
                 key={payment.id}
                 as="li"
@@ -209,6 +213,8 @@ export function CustomerPaymentsPage() {
               </RevealItem>
             ))}
           </RevealGroup>
+            <PaginationBar page={page} totalPages={totalPages} onPageChange={setPage} />
+          </>
         )}
       </Reveal>
     </div>

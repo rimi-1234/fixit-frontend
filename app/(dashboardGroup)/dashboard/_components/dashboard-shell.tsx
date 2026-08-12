@@ -6,9 +6,11 @@ import {
   ArrowUpRight,
   CalendarDays,
   CreditCard,
+  FileText,
   FolderTree,
   LayoutDashboard,
   LogOut,
+  Mail,
   Menu,
   Search,
   Settings2,
@@ -18,6 +20,7 @@ import {
   Wrench,
 } from "lucide-react";
 
+import { NavUserMenu } from "@/components/nav-user-menu";
 import { Button } from "@/components/ui/button";
 import {
   Sheet,
@@ -29,6 +32,7 @@ import {
 } from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useAuth } from "@/hooks/use-auth";
+import { dashboardPathForRole, profilePathForRole } from "@/lib/auth-token";
 import type { Role } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { getInitials } from "@/utils/get-initials";
@@ -56,9 +60,13 @@ const NAV_BY_ROLE: Record<Role, NavItem[]> = {
   ],
   ADMIN: [
     { href: "/dashboard/admin", label: "Overview", icon: LayoutDashboard },
-    { href: "/dashboard/admin/users", label: "Users", icon: Users },
-    { href: "/dashboard/admin/bookings", label: "Bookings", icon: CalendarDays },
+    { href: "/dashboard/admin/users", label: "Manage Users", icon: Users },
+    { href: "/dashboard/admin/bookings", label: "Manage Bookings", icon: CalendarDays },
     { href: "/dashboard/admin/categories", label: "Categories", icon: FolderTree },
+    { href: "/dashboard/admin/services", label: "Services", icon: Wrench },
+    { href: "/dashboard/admin/contact", label: "Contact Messages", icon: Mail },
+    { href: "/dashboard/admin/blog", label: "Blog Posts", icon: FileText },
+    { href: "/dashboard/admin/profile", label: "Profile", icon: UserRound },
   ],
 };
 
@@ -181,7 +189,6 @@ export function DashboardTopbar() {
   const { role, user, logout } = useAuth();
   const items = role ? NAV_BY_ROLE[role] : [];
   const title = pageTitle(pathname, items);
-  const initials = getInitials(user?.email ?? "U", 1);
 
   return (
     <header className="sticky top-0 z-30 border-b border-border/50 bg-background/85 backdrop-blur-md">
@@ -258,17 +265,17 @@ export function DashboardTopbar() {
             <span className="lg:hidden">Browse</span>
           </Link>
           <ThemeToggle />
-          <div className="hidden items-center gap-2 rounded-full border border-border/70 bg-card py-1 pr-3 pl-1 lg:flex">
-            <span className="inline-flex size-7 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground">
-              {initials}
-            </span>
-            <span className="max-w-[9rem] truncate text-sm text-muted-foreground xl:max-w-[12rem]">
-              {user?.email}
-            </span>
-          </div>
-          <span className="inline-flex size-8 items-center justify-center rounded-full bg-primary text-xs font-semibold text-primary-foreground lg:hidden">
-            {initials}
-          </span>
+
+          {role ? (
+            <NavUserMenu
+              user={user}
+              role={role}
+              dashboardHref={dashboardPathForRole(role)}
+              profileHref={profilePathForRole(role)}
+              onLogout={logout}
+            />
+          ) : null}
+
           <Link
             href="/services"
             className="inline-flex size-9 items-center justify-center rounded-full border border-border/70 text-muted-foreground transition-colors hover:text-foreground md:hidden"

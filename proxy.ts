@@ -8,18 +8,6 @@ function isRole(value: string | undefined): value is Role {
   return value === "CUSTOMER" || value === "TECHNICIAN" || value === "ADMIN";
 }
 
-function dashboardFor(role: Role): string {
-  switch (role) {
-    case "TECHNICIAN":
-      return "/dashboard/technician";
-    case "ADMIN":
-      return "/dashboard/admin";
-    case "CUSTOMER":
-    default:
-      return "/dashboard/customer";
-  }
-}
-
 function expectedDashboardSegment(role: Role): string {
   switch (role) {
     case "TECHNICIAN":
@@ -32,26 +20,14 @@ function expectedDashboardSegment(role: Role): string {
   }
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get(AUTH_TOKEN_COOKIE)?.value;
   const roleCookie = request.cookies.get(AUTH_ROLE_COOKIE)?.value;
   const role = isRole(roleCookie) ? roleCookie : null;
   const isLoggedIn = Boolean(token && role);
 
-  const isAuthPage =
-    pathname === "/login" ||
-    pathname === "/register" ||
-    pathname === "/auth/login" ||
-    pathname === "/auth/register";
   const isDashboard = pathname.startsWith("/dashboard");
-
-  if (isAuthPage && isLoggedIn && role) {
-    const url = request.nextUrl.clone();
-    url.pathname = dashboardFor(role);
-    url.search = "";
-    return NextResponse.redirect(url);
-  }
 
   if (isDashboard) {
     if (!isLoggedIn || !role) {
@@ -64,10 +40,7 @@ export function middleware(request: NextRequest) {
     const segment = expectedDashboardSegment(role);
     const roleRoot = `/dashboard/${segment}`;
 
-    if (
-      pathname !== roleRoot &&
-      !pathname.startsWith(`${roleRoot}/`)
-    ) {
+    if (pathname !== roleRoot && !pathname.startsWith(`${roleRoot}/`)) {
       const url = request.nextUrl.clone();
       url.pathname = roleRoot;
       url.search = "";
@@ -79,11 +52,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    "/dashboard/:path*",
-    "/login",
-    "/register",
-    "/auth/login",
-    "/auth/register",
-  ],
+  matcher: ["/dashboard/:path*"],
 };
