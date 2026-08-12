@@ -36,6 +36,8 @@ export function googleAuthErrorMessage(code: string | null) {
       return "Google sign-in is not configured yet. Add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET, then try again.";
     case "google_denied":
       return "Google sign-in was cancelled.";
+    case "google_banned":
+      return "This Google account is linked to a banned FixItNow user. Ask an admin to restore access, or sign in with a different Google account.";
     case "google_failed":
       return "Google sign-in failed. Please try again.";
     default:

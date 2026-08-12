@@ -1,3 +1,6 @@
+import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
 import { NextResponse } from "next/server";
 
 import type { Role } from "@/lib/types";
@@ -13,21 +16,68 @@ export type GoogleOAuthState = {
   exp: number;
 };
 
-export function googleCredentials() {
-  const clientId = process.env.GOOGLE_CLIENT_ID?.trim() || "";
-  const clientSecret = process.env.GOOGLE_CLIENT_SECRET?.trim() || "";
-  return { clientId, clientSecret, configured: Boolean(clientId && clientSecret) };
+function parseEnvFile(filePath: string) {
+  if (!existsSync(filePath)) return {} as Record<string, string>;
+  const values: Record<string, string> = {};
+  for (const raw of readFileSync(filePath, "utf8").split(/\r?\n/)) {
+    const line = raw.trim();
+    if (!line || line.startsWith("#")) continue;
+    const eq = line.indexOf("=");
+    if (eq <= 0) continue;
+    const key = line.slice(0, eq).trim();
+    let value = line.slice(eq + 1).trim();
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+    values[key] = value;
+  }
+  return values;
 }
 
-export function apiBases() {
+function fileEnv() {
+  const files = [
+    resolve(process.cwd(), ".env.local"),
+    resolve(process.cwd(), ".env"),
+    resolve(process.cwd(), "FixItNow-web-pro", ".env.local"),
+  ];
+  let values: Record<string, string> = {};
+  for (const file of files) {
+    values = { ...values, ...parseEnvFile(file) };
+  }
+  return values;
+}
+
+export function googleCredentials() {
+  const fromFile = fileEnv();
+  const clientId = String(
+    process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
+      process.env.GOOGLE_CLIENT_ID ||
+      fromFile.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||
+      fromFile.GOOGLE_CLIENT_ID ||
+      ""
+  ).trim();
+  const clientSecret = String(
+    process.env.GOOGLE_CLIENT_SECRET || fromFile.GOOGLE_CLIENT_SECRET || ""
+  ).trim();
+  return {
+    clientId,
+    clientSecret,
+    configured: Boolean(clientId),
+    canExchange: Boolean(clientId && clientSecret),
+  };
+}
+
+export function googleAuthApiBases() {
   const remote = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
-  const local = (process.env.API_INTERNAL_URL || "http://localhost:5000/api").replace(
-    /\/$/,
-    ""
-  );
+  const local = (
+    process.env.API_INTERNAL_URL || "http://localhost:5000/api"
+  ).replace(/\/$/, "");
   if (!remote) throw new Error("NEXT_PUBLIC_API_URL is not set");
-  if (process.env.NODE_ENV === "development" && local !== remote) {
-    return [local, remote];
+  if (process.env.NODE_ENV === "development") {
+    return [local];
   }
   return [remote];
 }
