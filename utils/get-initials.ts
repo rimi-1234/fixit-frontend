@@ -30,5 +30,5 @@ export function avatarFromString(value: string): string {
     hash = value.charCodeAt(i) + ((hash << 5) - hash);
   }
   const index = (Math.abs(hash) % AVATAR_COUNT) + 1;
-  return `/avatars/avatar-${index}.png`;
+  return `/avatars/avatar-${index}.svg`;
 }

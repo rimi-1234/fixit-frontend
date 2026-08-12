@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Star } from "lucide-react";
 
+import { SafePhoto } from "@/components/safe-photo";
 import type { Service } from "@/lib/types";
 import { formatCurrency } from "@/utils/format-currency";
 import { serviceImageUrl } from "@/utils/service-images";
@@ -65,14 +66,7 @@ export function ServiceCard({
         <div className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span className="relative inline-block size-6 shrink-0 overflow-hidden rounded-full">
-              <Image
-                src={techPhoto}
-                alt=""
-                fill
-                sizes="24px"
-                className="object-cover"
-                unoptimized={shouldUnoptimizeImage(techPhoto)}
-              />
+              <SafePhoto src={techPhoto} className="size-full" />
             </span>
             <span className="truncate">{displayNameFromEmail(techEmail)}</span>
             <span className="inline-flex items-center gap-0.5">

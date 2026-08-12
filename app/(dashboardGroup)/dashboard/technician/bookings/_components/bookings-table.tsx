@@ -11,6 +11,10 @@ import { EmptyState } from "@/components/empty-state";
 import { PaginationBar } from "@/components/pagination-bar";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
+  FilterBar,
+  FilterSearch,
+} from "@/app/(dashboardGroup)/dashboard/_components/dashboard-filters";
+import {
   Table,
   TableBody,
   TableCell,
@@ -115,21 +119,31 @@ export function TechnicianBookingsTable() {
   } = useTechnicianBookings();
   const updateStatus = useUpdateTechnicianBookingStatus();
   const [filter, setFilter] = useState<StatusFilter>("ALL");
+  const [search, setSearch] = useState("");
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<PendingConfirm | null>(null);
   const [confirming, setConfirming] = useState(false);
 
   const list = useMemo(() => {
     const all = bookings ?? [];
+    const query = search.trim().toLowerCase();
     return all
       .filter((booking) => matchesFilter(booking, filter))
+      .filter((booking) => {
+        if (!query) return true;
+        return [booking.service?.name, booking.customer?.email, booking.status]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase()
+          .includes(query);
+      })
       .slice()
       .sort(
         (a, b) =>
           new Date(b.scheduledTime).getTime() -
           new Date(a.scheduledTime).getTime()
       );
-  }, [bookings, filter]);
+  }, [bookings, filter, search]);
 
   const { page, setPage, totalPages, paged } = usePagination(list, 8);
 
@@ -209,6 +223,18 @@ export function TechnicianBookingsTable() {
           Overview
         </Button>
       </div>
+
+      <FilterBar>
+        <FilterSearch
+          id="tech-bookings-search"
+          value={search}
+          onChange={(value) => {
+            setSearch(value);
+            setPage(1);
+          }}
+          placeholder="Service or customer…"
+        />
+      </FilterBar>
 
       <div className="flex flex-wrap gap-2">
         {FILTERS.map((item) => (

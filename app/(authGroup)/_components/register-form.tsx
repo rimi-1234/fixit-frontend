@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect } from "react";
 import { useForm, Controller, useWatch } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -10,7 +11,7 @@ import { toast } from "sonner";
 
 import { RoleToggle } from "@/app/(authGroup)/_components/role-toggle";
 import { DemoRoleLogin } from "@/app/(authGroup)/_components/demo-role-login";
-import { SocialLoginButtons } from "@/app/(authGroup)/_components/social-login-buttons";
+import { SocialLoginButtons, googleAuthErrorMessage } from "@/app/(authGroup)/_components/social-login-buttons";
 import { PasswordInput } from "@/components/password-input";
 import { TechnicianAvatarPicker } from "@/components/technician-avatar-picker";
 import { Button } from "@/components/ui/button";
@@ -93,7 +94,13 @@ type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { register: registerUser } = useAuth();
+
+  useEffect(() => {
+    const message = googleAuthErrorMessage(searchParams.get("error"));
+    if (message) toast.error(message);
+  }, [searchParams]);
 
   const {
     register,
@@ -314,7 +321,7 @@ export function RegisterForm() {
       </p>
     </form>
 
-      <SocialLoginButtons />
+      <SocialLoginButtons role={role} from="register" />
       <DemoRoleLogin />
     </div>
   );

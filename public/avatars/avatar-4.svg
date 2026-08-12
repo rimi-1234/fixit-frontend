@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Technician avatar">
+  <rect width="128" height="128" fill="#fce7f3"/>
+  <circle cx="64" cy="50" r="26" fill="#be185d"/>
+  <ellipse cx="64" cy="118" rx="44" ry="40" fill="#be185d"/>
+</svg>

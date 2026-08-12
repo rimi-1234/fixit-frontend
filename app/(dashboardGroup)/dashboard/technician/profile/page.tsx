@@ -1,10 +1,6 @@
-import type { Metadata } from "next";
+"use client";
 
 import { TechnicianProfileForm } from "@/app/(dashboardGroup)/dashboard/technician/profile/_components/profile-form";
-
-export const metadata: Metadata = {
-  title: "Technician profile",
-};
 
 export default function TechnicianProfilePage() {
   return <TechnicianProfileForm />;

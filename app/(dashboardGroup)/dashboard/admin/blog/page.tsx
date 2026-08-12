@@ -14,7 +14,22 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/empty-state";
+import { PaginationBar } from "@/components/pagination-bar";
 import { formatDateTime } from "@/utils/format-date";
+import { usePagination } from "@/hooks/use-pagination";
+import {
+  FilterBar,
+  FilterSearch,
+  FilterSelect,
+} from "@/app/(dashboardGroup)/dashboard/_components/dashboard-filters";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface BlogPost {
   id: string;
@@ -40,6 +55,8 @@ type FormValues = z.infer<typeof schema>;
 
 export default function AdminBlogPage() {
   const [showForm, setShowForm] = useState(false);
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("");
   const queryClient = useQueryClient();
 
   const { data, isLoading, isError, refetch } = useQuery<BlogResponse>({
@@ -69,7 +86,18 @@ export default function AdminBlogPage() {
     onError: () => toast.error("Failed to delete post."),
   });
 
-  const posts = data?.posts ?? [];
+  const posts = (data?.posts ?? []).filter((post) => {
+    if (status === "published" && !post.published) return false;
+    if (status === "draft" && post.published) return false;
+    const query = search.trim().toLowerCase();
+    if (!query) return true;
+    return [post.title, post.excerpt, post.author?.email, post.author?.name]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase()
+      .includes(query);
+  });
+  const { page, setPage, totalPages, paged } = usePagination(posts, 8);
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -83,6 +111,32 @@ export default function AdminBlogPage() {
           New post
         </Button>
       </div>
+
+      <FilterBar>
+        <FilterSearch
+          id="blog-search"
+          value={search}
+          onChange={(value) => {
+            setSearch(value);
+            setPage(1);
+          }}
+          placeholder="Title, excerpt, author…"
+        />
+        <FilterSelect
+          id="blog-status"
+          label="Status"
+          value={status}
+          onChange={(value) => {
+            setStatus(value);
+            setPage(1);
+          }}
+          options={[
+            { value: "", label: "All posts" },
+            { value: "published", label: "Published" },
+            { value: "draft", label: "Draft" },
+          ]}
+        />
+      </FilterBar>
 
       {showForm && (
         <form onSubmit={handleSubmit((d) => createPost.mutateAsync(d))} className="rounded-2xl border border-border/60 bg-card p-6 shadow-sm space-y-4">
@@ -124,20 +178,49 @@ export default function AdminBlogPage() {
       ) : isError ? (
         <EmptyState icon={Newspaper} title="Couldn't load posts" description="API error." action={<Button variant="outline" onClick={() => refetch()}>Retry</Button>} />
       ) : posts.length === 0 ? (
-        <EmptyState icon={Newspaper} title="No posts yet" description="Create your first blog post above." />
+        <EmptyState icon={Newspaper} title="No matching posts" description="Try another search or status filter." />
       ) : (
-        <div className="divide-y divide-border/40 rounded-2xl border border-border/60 bg-card shadow-sm overflow-hidden">
-          {posts.map((post) => (
-            <div key={post.id} className="flex items-center gap-4 px-4 py-3">
-              <div className="min-w-0 flex-1">
-                <p className="font-medium truncate">{post.title}</p>
-                <p className="text-xs text-muted-foreground">{formatDateTime(post.createdAt)} · {post.published ? <span className="text-green-600">Published</span> : <span className="text-amber-600">Draft</span>}</p>
-              </div>
-              <Button size="icon" variant="ghost" className="shrink-0 text-destructive hover:text-destructive" onClick={() => deletePost.mutate(post.id)}>
-                <Trash2 aria-hidden="true" className="size-4" />
-              </Button>
-            </div>
-          ))}
+        <div className="rounded-2xl border border-border/60 bg-card shadow-sm overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Title</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Created</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paged.map((post) => (
+                <TableRow key={post.id}>
+                  <TableCell className="font-medium">{post.title}</TableCell>
+                  <TableCell>
+                    {post.published ? (
+                      <span className="text-green-600">Published</span>
+                    ) : (
+                      <span className="text-amber-600">Draft</span>
+                    )}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {formatDateTime(post.createdAt)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="text-destructive hover:text-destructive"
+                      onClick={() => deletePost.mutate(post.id)}
+                    >
+                      <Trash2 aria-hidden="true" className="size-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+          <div className="px-4 pb-4">
+            <PaginationBar page={page} totalPages={totalPages} onPageChange={setPage} />
+          </div>
         </div>
       )}
     </div>

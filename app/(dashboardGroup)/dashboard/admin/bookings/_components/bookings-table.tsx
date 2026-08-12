@@ -8,8 +8,14 @@ import { BookingStatusBadge } from "@/components/booking-status-badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
 import { PaginationBar } from "@/components/pagination-bar";
-import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  BOOKING_STATUS_FILTERS,
+  FilterBar,
+  FilterSearch,
+  FilterSelect,
+  filterBookings,
+} from "@/app/(dashboardGroup)/dashboard/_components/dashboard-filters";
 import {
   Table,
   TableBody,
@@ -20,41 +26,22 @@ import {
 } from "@/components/ui/table";
 import { useAdminBookings } from "@/hooks/use-admin";
 import { usePagination } from "@/hooks/use-pagination";
-import type { BookingStatus } from "@/lib/types";
 import { formatCurrency } from "@/utils/format-currency";
 import { formatDateTime } from "@/utils/format-date";
 
-const STATUS_OPTIONS: { value: "" | BookingStatus; label: string }[] = [
-  { value: "", label: "All statuses" },
-  { value: "REQUESTED", label: "Requested" },
-  { value: "ACCEPTED", label: "Accepted" },
-  { value: "DECLINED", label: "Declined" },
-  { value: "PAID", label: "Paid" },
-  { value: "IN_PROGRESS", label: "In progress" },
-  { value: "COMPLETED", label: "Completed" },
-  { value: "CANCELLED", label: "Cancelled" },
-];
-
 export function AdminBookingsTable() {
-  const [status, setStatus] = useState<"" | BookingStatus>("");
-  const filters = useMemo(
-    () => (status ? { status } : undefined),
-    [status]
-  );
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("");
 
-  const { data, isLoading, isError, isFetching, refetch } =
-    useAdminBookings(filters);
+  const { data, isLoading, isError, isFetching, refetch } = useAdminBookings();
 
   const bookings = useMemo(() => {
-    const list = data ?? [];
-    return list
-      .slice()
-      .sort(
-        (a, b) =>
-          new Date(b.scheduledTime).getTime() -
-          new Date(a.scheduledTime).getTime()
-      );
-  }, [data]);
+    return filterBookings(data ?? [], { search, status }).sort(
+      (a, b) =>
+        new Date(b.scheduledTime).getTime() -
+        new Date(a.scheduledTime).getTime()
+    );
+  }, [data, search, status]);
 
   const { page, setPage, totalPages, paged } = usePagination(bookings, 10);
 
@@ -79,24 +66,27 @@ export function AdminBookingsTable() {
         </Button>
       </div>
 
-      <div className="max-w-xs space-y-1.5">
-        <Label htmlFor="booking-status">Status</Label>
-        <select
-          id="booking-status"
-          value={status}
-          onChange={(e) => {
-            setStatus(e.target.value as "" | BookingStatus);
+      <FilterBar>
+        <FilterSearch
+          id="admin-bookings-search"
+          value={search}
+          onChange={(value) => {
+            setSearch(value);
             setPage(1);
           }}
-          className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-input/30"
-        >
-          {STATUS_OPTIONS.map((option) => (
-            <option key={option.value || "all"} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-      </div>
+          placeholder="Service, customer, technician…"
+        />
+        <FilterSelect
+          id="booking-status"
+          label="Status"
+          value={status}
+          onChange={(value) => {
+            setStatus(value);
+            setPage(1);
+          }}
+          options={BOOKING_STATUS_FILTERS}
+        />
+      </FilterBar>
 
       {isLoading ? (
         <div className="space-y-3">

@@ -12,6 +12,7 @@ import {
 
 import { BookNowPanel } from "@/app/(publicGroup)/_components/book-now-panel";
 import { SiteFooter } from "@/app/(publicGroup)/_components/site-footer";
+import { SafePhoto } from "@/components/safe-photo";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -24,7 +25,6 @@ import { useTechnician } from "@/hooks/use-technicians";
 import { formatCurrency } from "@/utils/format-currency";
 import { formatDate } from "@/utils/format-date";
 import { displayNameFromEmail } from "@/utils/display-name";
-import { shouldUnoptimizeImage } from "@/utils/image-src";
 import { technicianImageUrl } from "@/utils/technician-images";
 
 const PROFILE_HERO =
@@ -96,15 +96,7 @@ export function TechnicianProfileView({ technicianId }: { technicianId: string }
             <Reveal className="space-y-6">
               <div className="flex flex-col gap-5 sm:flex-row sm:items-end sm:gap-7">
                 <div className="relative mx-auto size-28 shrink-0 overflow-hidden rounded-full ring-4 ring-background sm:mx-0 sm:size-32">
-                  <Image
-                    src={avatar}
-                    alt=""
-                    fill
-                    sizes="128px"
-                    className="object-cover"
-                    priority
-                    unoptimized={shouldUnoptimizeImage(avatar)}
-                  />
+                  <SafePhoto src={avatar} className="size-full" alt="" />
                 </div>
 
                 <div className="min-w-0 flex-1 space-y-3 text-center sm:pb-1 sm:text-left">

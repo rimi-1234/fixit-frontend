@@ -13,6 +13,7 @@ import { serviceImageUrl } from "@/utils/service-images";
 import { shouldUnoptimizeImage } from "@/utils/image-src";
 import { displayNameFromEmail } from "@/utils/display-name";
 import { technicianImageUrl } from "@/utils/technician-images";
+import { SafePhoto } from "@/components/safe-photo";
 import { ServiceCard, ServiceCardSkeleton } from "@/app/(publicGroup)/_components/service-card";
 import { SiteFooter } from "@/app/(publicGroup)/_components/site-footer";
 import { Button } from "@/components/ui/button";
@@ -225,14 +226,7 @@ export default function ServiceDetailPage() {
                 className="group flex items-center gap-3"
               >
                 <span className="relative inline-block size-11 shrink-0 overflow-hidden rounded-full ring-2 ring-border/60">
-                  <Image
-                    src={techPhoto}
-                    alt=""
-                    fill
-                    sizes="44px"
-                    className="object-cover"
-                    unoptimized={shouldUnoptimizeImage(techPhoto)}
-                  />
+                  <SafePhoto src={techPhoto} className="size-full" />
                 </span>
                 <div className="min-w-0">
                   <p className="text-sm font-semibold group-hover:underline">{techName}</p>

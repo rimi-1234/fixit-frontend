@@ -1,12 +1,19 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo, useState } from "react";
 import {
   ArrowRight,
   MessageSquareQuote,
   Star,
   Sparkles,
 } from "lucide-react";
+
+import {
+  FilterBar,
+  FilterSearch,
+  FilterSelect,
+} from "@/app/(dashboardGroup)/dashboard/_components/dashboard-filters";
 
 import { StatTile } from "@/app/(dashboardGroup)/dashboard/_components/stat-tile";
 import { Button } from "@/components/ui/button";
@@ -18,10 +25,17 @@ import {
   RevealItem,
 } from "@/components/motion/reveal";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useMyBookings } from "@/hooks/use-bookings";
 import { usePagination } from "@/hooks/use-pagination";
 import { displayNameFromEmail } from "@/utils/display-name";
-import { formatDateTime } from "@/utils/format-date";
 import { cn } from "@/lib/utils";
 
 function StarRow({ rating }: { rating: number }) {
@@ -48,10 +62,29 @@ function StarRow({ rating }: { rating: number }) {
 
 export function CustomerReviewsPage() {
   const { data, isLoading, isError, refetch } = useMyBookings();
+  const [search, setSearch] = useState("");
+  const [filter, setFilter] = useState("");
   const list = data ?? [];
   const awaiting = list.filter((b) => b.status === "COMPLETED" && !b.review);
   const reviewed = list.filter((b) => Boolean(b.review));
-  const { page, setPage, totalPages, paged } = usePagination(reviewed, 6);
+  const rows = useMemo(() => {
+    const source =
+      filter === "awaiting" ? awaiting : filter === "submitted" ? reviewed : [...awaiting, ...reviewed];
+    const query = search.trim().toLowerCase();
+    return source.filter((booking) => {
+      if (!query) return true;
+      const haystack = [
+        booking.service?.name,
+        booking.technician?.email,
+        booking.review?.comment,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(query);
+    });
+  }, [awaiting, reviewed, filter, search]);
+  const { page, setPage, totalPages, paged } = usePagination(rows, 8);
   const avgRating =
     reviewed.length > 0
       ? reviewed.reduce((sum, b) => sum + (b.review?.rating ?? 0), 0) /
@@ -140,160 +173,133 @@ export function CustomerReviewsPage() {
         )}
       </RevealGroup>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-[1.05fr_0.95fr]">
-        <Reveal className="rounded-[1.5rem] border border-border/60 bg-card/80 p-5 shadow-sm sm:p-6">
-          <div className="mb-5 space-y-1">
+      <Reveal className="rounded-[1.5rem] border border-border/60 bg-card/80 p-5 shadow-sm sm:p-6">
+        <div className="mb-5 space-y-4">
+          <div className="space-y-1">
             <h3 className="text-base font-semibold tracking-tight sm:text-lg">
-              Awaiting your review
+              Reviews
             </h3>
             <p className="text-sm text-muted-foreground">
-              Completed jobs that still need your rating.
+              Filter awaiting and submitted feedback.
             </p>
           </div>
-
-          {isLoading ? (
-            <div className="space-y-3">
-              {Array.from({ length: 2 }).map((_, i) => (
-                <Skeleton key={i} className="h-24 w-full rounded-2xl" />
-              ))}
-            </div>
-          ) : isError ? (
-            <EmptyState
-              title="Couldn't load reviews"
-              description="Check that the API is running, then try again."
-              action={
-                <Button variant="outline" onClick={() => refetch()}>
-                  Retry
-                </Button>
-              }
+          <FilterBar>
+            <FilterSearch
+              id="reviews-search"
+              value={search}
+              onChange={(value) => {
+                setSearch(value);
+                setPage(1);
+              }}
+              placeholder="Service, technician, comment…"
             />
-          ) : awaiting.length === 0 ? (
-            <div className="flex flex-col items-start gap-3 rounded-2xl border border-dashed border-border/70 bg-muted/25 px-5 py-8">
-              <span className="inline-flex size-10 items-center justify-center rounded-xl bg-success/15 text-success">
-                <Star aria-hidden="true" className="size-4 fill-current" />
-              </span>
-              <div className="space-y-1">
-                <p className="font-medium tracking-tight">You’re all caught up</p>
-                <p className="text-sm text-muted-foreground">
-                  No completed jobs are waiting for feedback right now.
-                </p>
-              </div>
-            </div>
-          ) : (
-            <RevealGroup as="ul" animate="visible" className="grid gap-3">
-              {awaiting.map((booking) => (
-                <RevealItem
-                  key={booking.id}
-                  as="li"
-                  whileHover={{ y: -3 }}
-                  transition={{ type: "spring", stiffness: 320, damping: 24 }}
-                  className="group flex flex-col gap-4 rounded-2xl border border-border/60 bg-background/60 p-4 transition-colors hover:border-primary/25 hover:bg-accent/30 sm:flex-row sm:items-center sm:justify-between sm:p-5"
-                >
-                  <div className="min-w-0 space-y-1.5">
-                    <p className="font-semibold tracking-tight">
+            <FilterSelect
+              id="reviews-filter"
+              label="Type"
+              value={filter}
+              onChange={(value) => {
+                setFilter(value);
+                setPage(1);
+              }}
+              options={[
+                { value: "", label: "All" },
+                { value: "awaiting", label: "Awaiting review" },
+                { value: "submitted", label: "Submitted" },
+              ]}
+            />
+          </FilterBar>
+        </div>
+
+        {isLoading ? (
+          <Skeleton className="h-32 w-full rounded-2xl" />
+        ) : isError ? (
+          <EmptyState
+            title="Couldn't load reviews"
+            description="Check that the API is running, then try again."
+            action={
+              <Button variant="outline" onClick={() => refetch()}>
+                Retry
+              </Button>
+            }
+          />
+        ) : awaiting.length === 0 && reviewed.length === 0 ? (
+          <EmptyState
+            icon={Star}
+            title="No reviews yet"
+            description="After a job is completed, you can rate the technician here."
+          />
+        ) : rows.length === 0 ? (
+          <EmptyState
+            icon={Star}
+            title="No matching reviews"
+            description="Try another search or filter."
+          />
+        ) : (
+          <>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Service</TableHead>
+                  <TableHead>Technician</TableHead>
+                  <TableHead>Rating</TableHead>
+                  <TableHead>Comment</TableHead>
+                  <TableHead className="text-right">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paged.map((booking) => (
+                  <TableRow key={booking.id}>
+                    <TableCell className="font-medium">
                       {booking.service?.name ?? "Service"}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
                       {booking.technician?.email
                         ? displayNameFromEmail(booking.technician.email)
-                        : "Technician"}
-                      {" · "}
-                      {formatDateTime(booking.scheduledTime)}
-                    </p>
-                  </div>
-                  <Button
-                    size="sm"
-                    className="rounded-full"
-                    nativeButton={false}
-                    render={
-                      <Link
-                        href={`/dashboard/customer/bookings/${booking.id}#review`}
-                      />
-                    }
-                  >
-                    Leave review
-                    <ArrowRight aria-hidden="true" />
-                  </Button>
-                </RevealItem>
-              ))}
-            </RevealGroup>
-          )}
-        </Reveal>
-
-        <Reveal className="rounded-[1.5rem] border border-border/60 bg-card/80 p-5 shadow-sm sm:p-6">
-          <div className="mb-5 space-y-1">
-            <h3 className="text-base font-semibold tracking-tight sm:text-lg">
-              Past reviews
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              Feedback you’ve already submitted.
-            </p>
-          </div>
-
-          {isLoading ? (
-            <Skeleton className="h-32 w-full rounded-2xl" />
-          ) : reviewed.length === 0 ? (
-            <EmptyState
-              icon={Star}
-              title="No reviews yet"
-              description="After a job is completed, you can rate the technician here."
-            />
-          ) : (
-            <RevealGroup as="ul" animate="visible" className="grid gap-3">
-              {paged.map((booking) => (
-                <RevealItem
-                  key={booking.id}
-                  as="li"
-                  whileHover={{ y: -3 }}
-                  transition={{ type: "spring", stiffness: 320, damping: 24 }}
-                  className="space-y-3 rounded-2xl border border-border/60 bg-background/60 p-4 transition-colors hover:border-primary/20 hover:bg-accent/25 sm:p-5"
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div className="min-w-0 space-y-1">
-                      <p className="font-semibold tracking-tight">
-                        {booking.service?.name ?? "Service"}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {booking.technician?.email
-                          ? displayNameFromEmail(booking.technician.email)
-                          : "Technician"}
-                        {booking.review?.createdAt
-                          ? ` · ${formatDateTime(booking.review.createdAt)}`
-                          : ""}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2 rounded-full bg-muted/60 px-2.5 py-1">
-                      <StarRow rating={booking.review?.rating ?? 0} />
-                      <span className="text-xs font-medium text-muted-foreground">
-                        {booking.review?.rating}/5
-                      </span>
-                    </div>
-                  </div>
-                  {booking.review?.comment ? (
-                    <p className="text-sm leading-relaxed text-muted-foreground">
-                      “{booking.review.comment}”
-                    </p>
-                  ) : (
-                    <p className="text-sm text-muted-foreground/80 italic">
-                      No written comment
-                    </p>
-                  )}
-                  <Link
-                    href={`/dashboard/customer/bookings/${booking.id}`}
-                    className="inline-flex items-center gap-1 text-sm font-medium text-primary transition-colors hover:text-primary/80"
-                  >
-                    Open booking
-                    <ArrowRight aria-hidden="true" className="size-3.5" />
-                  </Link>
-                </RevealItem>
-              ))}
-            </RevealGroup>
-          )}
-          {!isLoading && reviewed.length > 0 ? (
+                        : "—"}
+                    </TableCell>
+                    <TableCell>
+                      {booking.review ? (
+                        <div className="flex items-center gap-2">
+                          <StarRow rating={booking.review.rating} />
+                          <span className="text-xs text-muted-foreground">
+                            {booking.review.rating}/5
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">Pending</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="max-w-[16rem] truncate text-muted-foreground">
+                      {booking.review?.comment || "—"}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        size="sm"
+                        variant={booking.review ? "outline" : "default"}
+                        className="rounded-full"
+                        nativeButton={false}
+                        render={
+                          <Link
+                            href={
+                              booking.review
+                                ? `/dashboard/customer/bookings/${booking.id}`
+                                : `/dashboard/customer/bookings/${booking.id}#review`
+                            }
+                          />
+                        }
+                      >
+                        {booking.review ? "Open" : "Leave review"}
+                        <ArrowRight aria-hidden="true" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
             <PaginationBar page={page} totalPages={totalPages} onPageChange={setPage} />
-          ) : null}
-        </Reveal>
-      </div>
+          </>
+        )}
+      </Reveal>
     </div>
   );
 }

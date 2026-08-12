@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useMemo, useState } from "react";
 import {
   ArrowRight,
   ArrowUpRight,
@@ -9,8 +10,25 @@ import {
   Clock3,
   CreditCard,
   Search,
+  Star,
 } from "lucide-react";
 
+import {
+  ChartCard,
+  StatusPieChart,
+  TrendLineChart,
+  WeeklyBarChart,
+  last7DaysCounts,
+  last7DaysSums,
+  statusBreakdown,
+} from "@/app/(dashboardGroup)/dashboard/_components/dashboard-charts";
+import {
+  BOOKING_STATUS_FILTERS,
+  FilterBar,
+  FilterSearch,
+  FilterSelect,
+  filterBookings,
+} from "@/app/(dashboardGroup)/dashboard/_components/dashboard-filters";
 import { StatTile } from "@/app/(dashboardGroup)/dashboard/_components/stat-tile";
 import { BookingStatusBadge } from "@/components/booking-status-badge";
 import { Button } from "@/components/ui/button";
@@ -21,11 +39,21 @@ import {
   RevealGroup,
   RevealItem,
 } from "@/components/motion/reveal";
+import { PaginationBar } from "@/components/pagination-bar";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useAuth } from "@/hooks/use-auth";
 import { useMyBookings } from "@/hooks/use-bookings";
 import { useBookingStatusToasts } from "@/hooks/use-booking-status-toasts";
 import { useMyPayments } from "@/hooks/use-payments";
+import { usePagination } from "@/hooks/use-pagination";
 import type { Booking } from "@/lib/types";
 import { formatCurrency } from "@/utils/format-currency";
 import { formatDateTime } from "@/utils/format-date";
@@ -65,12 +93,39 @@ export function CustomerDashboard() {
   const spent = paymentList
     .filter((p) => p.status === "COMPLETED")
     .reduce((sum, p) => sum + (p.amount || 0), 0);
+  const pendingReviews = list.filter(
+    (b) => b.status === "COMPLETED" && !b.review
+  ).length;
 
-  const recent = list.slice(0, 4);
+  const sorted = useMemo(
+    () =>
+      list
+        .slice()
+        .sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        ),
+    [list]
+  );
+
+  const weekData = last7DaysCounts(list);
+  const spendTrend = last7DaysSums(paymentList);
+  const statusData = statusBreakdown(list);
+
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("");
+  const filtered = useMemo(
+    () => filterBookings(sorted, { search, status }),
+    [sorted, search, status]
+  );
+  const { page, setPage, totalPages, paged } = usePagination(filtered, 6);
+
   const nextBooking = [...activeJobs].sort(
     (a, b) =>
       new Date(a.scheduledTime).getTime() - new Date(b.scheduledTime).getTime()
   )[0];
+
+  const chartsLoading = bookingsLoading || paymentsLoading;
 
   return (
     <div className="mx-auto max-w-6xl space-y-6">
@@ -142,9 +197,9 @@ export function CustomerDashboard() {
         </div>
       </Reveal>
 
-      <RevealGroup className="grid gap-4 sm:grid-cols-3">
-        {bookingsLoading || paymentsLoading ? (
-          Array.from({ length: 3 }).map((_, i) => (
+      <RevealGroup className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {chartsLoading ? (
+          Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className="h-28 rounded-2xl" />
           ))
         ) : (
@@ -175,11 +230,43 @@ export function CustomerDashboard() {
                 iconClassName="bg-success/15 text-success"
               />
             </RevealItem>
+            <RevealItem>
+              <StatTile
+                label="Pending reviews"
+                value={pendingReviews}
+                hint="Jobs waiting for feedback"
+                icon={Star}
+              />
+            </RevealItem>
           </>
         )}
       </RevealGroup>
 
-      <div className="grid gap-4 md:grid-cols-[1.2fr_0.8fr]">
+      <div className="grid gap-6 lg:grid-cols-3">
+        <ChartCard title="Bookings — last 7 days">
+          {chartsLoading ? (
+            <Skeleton className="h-[220px] w-full rounded-xl" />
+          ) : (
+            <WeeklyBarChart data={weekData} label="Bookings" />
+          )}
+        </ChartCard>
+        <ChartCard title="Spending — last 7 days">
+          {chartsLoading ? (
+            <Skeleton className="h-[220px] w-full rounded-xl" />
+          ) : (
+            <TrendLineChart data={spendTrend} label="Spent" />
+          )}
+        </ChartCard>
+        <ChartCard title="Booking status">
+          {chartsLoading ? (
+            <Skeleton className="h-[220px] w-full rounded-xl" />
+          ) : (
+            <StatusPieChart data={statusData} />
+          )}
+        </ChartCard>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-[1.4fr_0.6fr]">
         <Reveal className="rounded-2xl border border-border/60 bg-card p-5 shadow-sm sm:p-6">
           <div className="mb-5 flex flex-wrap items-start justify-between gap-3">
             <div className="space-y-1">
@@ -187,10 +274,10 @@ export function CustomerDashboard() {
                 Activity
               </p>
               <h2 className="text-lg font-semibold tracking-tight">
-                Recent bookings
+                Your bookings
               </h2>
               <p className="text-sm text-muted-foreground">
-                The latest service requests and their current status.
+                Live requests, payments, and reviews.
               </p>
             </div>
             <Button
@@ -221,7 +308,7 @@ export function CustomerDashboard() {
                 </Button>
               }
             />
-          ) : recent.length === 0 ? (
+          ) : sorted.length === 0 ? (
             <EmptyState
               title="No bookings yet"
               description="Browse services and request a technician for a time slot."
@@ -232,41 +319,84 @@ export function CustomerDashboard() {
               }
             />
           ) : (
-            <ul className="divide-y divide-border/60">
-              {recent.map((booking) => {
-                const action = bookingAction(booking);
-                return (
-                  <li
-                    key={booking.id}
-                    className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <div className="min-w-0 space-y-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-medium tracking-tight">
+            <>
+              <FilterBar className="mb-4">
+                <FilterSearch
+                  id="customer-overview-search"
+                  value={search}
+                  onChange={(value) => {
+                    setSearch(value);
+                    setPage(1);
+                  }}
+                  placeholder="Service or technician…"
+                />
+                <FilterSelect
+                  id="customer-overview-status"
+                  label="Status"
+                  value={status}
+                  onChange={(value) => {
+                    setStatus(value);
+                    setPage(1);
+                  }}
+                  options={BOOKING_STATUS_FILTERS}
+                />
+              </FilterBar>
+              {filtered.length === 0 ? (
+                <EmptyState
+                  title="No matching bookings"
+                  description="Try another search or status filter."
+                />
+              ) : (
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Service</TableHead>
+                    <TableHead>Scheduled</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Action</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paged.map((booking) => {
+                    const action = bookingAction(booking);
+                    return (
+                      <TableRow key={booking.id}>
+                        <TableCell className="font-medium">
                           {booking.service?.name ?? "Service"}
-                        </p>
-                        <BookingStatusBadge status={booking.status} />
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        {formatDateTime(booking.scheduledTime)}
-                        {booking.technician?.email
-                          ? ` · ${booking.technician.email.split("@")[0]}`
-                          : ""}
-                      </p>
-                    </div>
-                    <Button
-                      variant={booking.status === "ACCEPTED" ? "default" : "outline"}
-                      size="sm"
-                      className="rounded-full"
-                      nativeButton={false}
-                      render={<Link href={action.href} />}
-                    >
-                      {action.label}
-                    </Button>
-                  </li>
-                );
-              })}
-            </ul>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {formatDateTime(booking.scheduledTime)}
+                        </TableCell>
+                        <TableCell>
+                          <BookingStatusBadge status={booking.status} />
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <Button
+                            variant={
+                              booking.status === "ACCEPTED" ? "default" : "outline"
+                            }
+                            size="sm"
+                            className="rounded-full"
+                            nativeButton={false}
+                            render={<Link href={action.href} />}
+                          >
+                            {action.label}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+              <PaginationBar
+                page={page}
+                totalPages={totalPages}
+                onPageChange={setPage}
+              />
+            </>
+              )}
+            </>
           )}
         </Reveal>
 

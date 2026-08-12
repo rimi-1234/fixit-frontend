@@ -47,18 +47,21 @@ async function assembleFromList(base: string, id: string) {
         id: string;
         technicianId: string;
         categoryId: string;
-        technician?: { id?: string };
+        technician?: Record<string, unknown>;
       }
     | undefined;
   if (!service) return null;
 
-  const technicianId = service.technician?.id || service.technicianId;
+  const technicianId =
+    (typeof service.technician?.id === "string" && service.technician.id) ||
+    service.technicianId;
   let reviews: unknown[] = [];
-  let averageRating = service.technician && "averageRating" in service.technician
-    ? (service.technician as { averageRating?: number }).averageRating ?? 0
-    : 0;
+  let averageRating =
+    typeof service.technician?.averageRating === "number"
+      ? service.technician.averageRating
+      : 0;
   let reviewCount = 0;
-  let technician = service.technician ?? null;
+  let technician: Record<string, unknown> | null = service.technician ?? null;
 
   if (technicianId) {
     try {

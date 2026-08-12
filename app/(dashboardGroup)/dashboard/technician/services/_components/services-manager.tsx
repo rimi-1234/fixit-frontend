@@ -2,18 +2,33 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Pencil, Plus, Trash2, Wrench } from "lucide-react";
 
 import { ServiceFormDialog } from "@/app/(dashboardGroup)/dashboard/technician/services/_components/service-form-dialog";
+import {
+  FilterBar,
+  FilterSearch,
+  FilterSelect,
+} from "@/app/(dashboardGroup)/dashboard/_components/dashboard-filters";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
+import { PaginationBar } from "@/components/pagination-bar";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useAuth } from "@/hooks/use-auth";
 import { useCategories } from "@/hooks/use-categories";
 import { useDeleteService } from "@/hooks/use-services";
 import { useTechnician } from "@/hooks/use-technicians";
+import { usePagination } from "@/hooks/use-pagination";
 import type { Service } from "@/lib/types";
 import { formatCurrency } from "@/utils/format-currency";
 import { shouldUnoptimizeImage } from "@/utils/image-src";
@@ -35,8 +50,23 @@ export function TechnicianServicesManager() {
   const [deleteTarget, setDeleteTarget] = useState<Service | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  const [search, setSearch] = useState("");
+  const [categoryId, setCategoryId] = useState("");
   const services = technician?.services ?? [];
   const categoryList = categories ?? [];
+  const filtered = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    return services.filter((service) => {
+      if (categoryId && service.categoryId !== categoryId) return false;
+      if (!query) return true;
+      return [service.name, service.description, service.category?.name]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase()
+        .includes(query);
+    });
+  }, [services, search, categoryId]);
+  const { page, setPage, totalPages, paged } = usePagination(filtered, 8);
 
   function openCreate() {
     setEditing(null);
@@ -157,65 +187,120 @@ export function TechnicianServicesManager() {
           }
         />
       ) : (
-        <ul className="divide-y divide-border/60">
-          {services.map((service) => {
-            const thumb = serviceImageUrl(service);
-            return (
-            <li
-              key={service.id}
-              className="flex flex-col gap-3 py-4 sm:flex-row sm:items-start sm:justify-between"
-            >
-              <div className="flex min-w-0 gap-3">
-                <div className="relative size-16 shrink-0 overflow-hidden rounded-xl bg-muted sm:size-20">
-                  <Image
-                    src={thumb}
-                    alt=""
-                    fill
-                    sizes="80px"
-                    className="object-cover"
-                    unoptimized={shouldUnoptimizeImage(thumb)}
-                  />
-                </div>
-                <div className="min-w-0 space-y-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="font-medium tracking-tight">{service.name}</p>
-                    <span className="text-xs uppercase tracking-wide text-muted-foreground">
-                      {service.category?.name ?? "Uncategorized"}
-                    </span>
-                  </div>
-                  <p className="text-sm text-muted-foreground line-clamp-2">
-                    {service.description}
-                  </p>
-                  <p className="text-sm font-medium">
-                    {formatCurrency(service.price)}
-                  </p>
-                </div>
+        <>
+          <FilterBar>
+            <FilterSearch
+              id="tech-services-search"
+              value={search}
+              onChange={(value) => {
+                setSearch(value);
+                setPage(1);
+              }}
+              placeholder="Name or description…"
+            />
+            <FilterSelect
+              id="tech-services-category"
+              label="Category"
+              value={categoryId}
+              onChange={(value) => {
+                setCategoryId(value);
+                setPage(1);
+              }}
+              options={[
+                { value: "", label: "All categories" },
+                ...categoryList.map((category) => ({
+                  value: category.id,
+                  label: category.name,
+                })),
+              ]}
+            />
+          </FilterBar>
+          {filtered.length === 0 ? (
+            <EmptyState
+              icon={Wrench}
+              title="No matching services"
+              description="Try another search or category filter."
+            />
+          ) : (
+            <div className="rounded-2xl border border-border/60 bg-card shadow-sm overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Service</TableHead>
+                    <TableHead>Category</TableHead>
+                    <TableHead className="text-right">Price</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paged.map((service) => {
+                    const thumb = serviceImageUrl(service);
+                    return (
+                      <TableRow key={service.id}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <div className="relative size-10 shrink-0 overflow-hidden rounded-lg bg-muted">
+                              <Image
+                                src={thumb}
+                                alt=""
+                                fill
+                                sizes="40px"
+                                className="object-cover"
+                                unoptimized={shouldUnoptimizeImage(thumb)}
+                              />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="font-medium">{service.name}</p>
+                              <p className="max-w-[18rem] truncate text-xs text-muted-foreground">
+                                {service.description}
+                              </p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {service.category?.name ?? "Uncategorized"}
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          {formatCurrency(service.price)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openEdit(service)}
+                            >
+                              <Pencil aria-hidden="true" />
+                              Edit
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => setDeleteTarget(service)}
+                              disabled={deleteService.isPending}
+                            >
+                              <Trash2 aria-hidden="true" />
+                              Delete
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+              <div className="px-4 pb-4">
+                <PaginationBar
+                  page={page}
+                  totalPages={totalPages}
+                  onPageChange={setPage}
+                />
               </div>
-              <div className="flex shrink-0 gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => openEdit(service)}
-                >
-                  <Pencil aria-hidden="true" />
-                  Edit
-                </Button>
-                <Button
-                  type="button"
-                  variant="destructive"
-                  size="sm"
-                  onClick={() => setDeleteTarget(service)}
-                  disabled={deleteService.isPending}
-                >
-                  <Trash2 aria-hidden="true" />
-                  Delete
-                </Button>
-              </div>
-            </li>
-            );
-          })}
-        </ul>
+            </div>
+          )}
+        </>
       )}
 
       <Button

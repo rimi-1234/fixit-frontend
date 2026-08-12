@@ -1,13 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { FolderTree, Pencil, Plus, Trash2 } from "lucide-react";
 
 import { CategoryFormDialog } from "@/app/(dashboardGroup)/dashboard/admin/categories/_components/category-form-dialog";
+import {
+  FilterBar,
+  FilterSearch,
+} from "@/app/(dashboardGroup)/dashboard/_components/dashboard-filters";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
+import { PaginationBar } from "@/components/pagination-bar";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   Table,
@@ -21,6 +26,7 @@ import {
   useAdminCategories,
   useAdminDeleteCategory,
 } from "@/hooks/use-admin";
+import { usePagination } from "@/hooks/use-pagination";
 import type { Category } from "@/lib/types";
 
 export function AdminCategoriesManager() {
@@ -32,7 +38,18 @@ export function AdminCategoriesManager() {
   const [deleteTarget, setDeleteTarget] = useState<Category | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  const [search, setSearch] = useState("");
   const categories = data ?? [];
+  const filtered = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return categories;
+    return categories.filter(
+      (category) =>
+        category.name.toLowerCase().includes(query) ||
+        category.slug.toLowerCase().includes(query)
+    );
+  }, [categories, search]);
+  const { page, setPage, totalPages, paged } = usePagination(filtered, 8);
 
   function openCreate() {
     setEditing(null);
@@ -98,6 +115,18 @@ export function AdminCategoriesManager() {
         </div>
       </div>
 
+      <FilterBar>
+        <FilterSearch
+          id="category-search"
+          value={search}
+          onChange={(value) => {
+            setSearch(value);
+            setPage(1);
+          }}
+          placeholder="Name or slug…"
+        />
+      </FilterBar>
+
       {isLoading ? (
         <div className="space-y-3">
           {Array.from({ length: 5 }).map((_, i) => (
@@ -126,10 +155,16 @@ export function AdminCategoriesManager() {
             </Button>
           }
         />
+      ) : filtered.length === 0 ? (
+        <EmptyState
+          icon={FolderTree}
+          title="No matching categories"
+          description="Try a different search term."
+        />
       ) : (
         <>
           <ul className="divide-y divide-border/60 lg:hidden">
-            {categories.map((category) => {
+            {paged.map((category) => {
               const busy = pendingId === category.id;
               return (
                 <li
@@ -178,7 +213,7 @@ export function AdminCategoriesManager() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {categories.map((category) => {
+                {paged.map((category) => {
                   const busy = pendingId === category.id;
                   return (
                     <TableRow key={category.id}>
@@ -217,6 +252,7 @@ export function AdminCategoriesManager() {
               </TableBody>
             </Table>
           </div>
+          <PaginationBar page={page} totalPages={totalPages} onPageChange={setPage} />
         </>
       )}
 

@@ -1,7 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { motion } from "motion/react";
 import { toast } from "sonner";
+
+import type { Role } from "@/lib/types";
 
 function GoogleIcon() {
   return (
@@ -22,9 +25,34 @@ function FacebookIcon() {
   );
 }
 
-export function SocialLoginButtons() {
-  function handleSocialLogin(provider: "Google" | "Facebook") {
-    toast.info(`${provider} login coming soon. Use email or a demo account for now.`);
+type SocialLoginButtonsProps = {
+  role?: Extract<Role, "CUSTOMER" | "TECHNICIAN">;
+  from?: "login" | "register";
+};
+
+export function googleAuthErrorMessage(code: string | null) {
+  switch (code) {
+    case "google_not_configured":
+      return "Google sign-in is not configured yet. Add GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET, then try again.";
+    case "google_denied":
+      return "Google sign-in was cancelled.";
+    case "google_failed":
+      return "Google sign-in failed. Please try again.";
+    default:
+      return null;
+  }
+}
+
+export function SocialLoginButtons({
+  role = "CUSTOMER",
+  from = "login",
+}: SocialLoginButtonsProps) {
+  const [googlePending, setGooglePending] = useState(false);
+
+  function handleGoogle() {
+    setGooglePending(true);
+    const params = new URLSearchParams({ role, from });
+    window.location.href = `/api/auth/google?${params.toString()}`;
   }
 
   return (
@@ -39,17 +67,20 @@ export function SocialLoginButtons() {
           type="button"
           whileHover={{ y: -1, scale: 1.01 }}
           whileTap={{ scale: 0.97 }}
-          onClick={() => handleSocialLogin("Google")}
-          className="flex items-center justify-center gap-2 rounded-xl border border-border/70 bg-card px-3 py-2.5 text-sm font-medium shadow-sm transition-shadow hover:shadow-md"
+          disabled={googlePending}
+          onClick={handleGoogle}
+          className="flex items-center justify-center gap-2 rounded-xl border border-border/70 bg-card px-3 py-2.5 text-sm font-medium shadow-sm transition-shadow hover:shadow-md disabled:opacity-70"
         >
           <GoogleIcon />
-          Google
+          {googlePending ? "Redirecting…" : "Google"}
         </motion.button>
         <motion.button
           type="button"
           whileHover={{ y: -1, scale: 1.01 }}
           whileTap={{ scale: 0.97 }}
-          onClick={() => handleSocialLogin("Facebook")}
+          onClick={() =>
+            toast.info("Facebook login coming soon. Use Google, email, or a demo account for now.")
+          }
           className="flex items-center justify-center gap-2 rounded-xl border border-border/70 bg-card px-3 py-2.5 text-sm font-medium shadow-sm transition-shadow hover:shadow-md"
         >
           <FacebookIcon />

@@ -7,6 +7,7 @@ import { Loader2, Search, Users } from "lucide-react";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
+import { PaginationBar } from "@/components/pagination-bar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -354,34 +355,11 @@ export function AdminUsersTable() {
           </div>
 
           {users.length > pageSize ? (
-            <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-              <p className="text-sm text-muted-foreground">
-                Showing {(currentPage - 1) * pageSize + 1}–
-                {Math.min(currentPage * pageSize, users.length)} of {users.length}
-              </p>
-              <div className="flex gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="rounded-full"
-                  disabled={currentPage <= 1}
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                >
-                  Previous
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  className="rounded-full"
-                  disabled={currentPage >= totalPages}
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
+            <PaginationBar
+              page={currentPage}
+              totalPages={totalPages}
+              onPageChange={setPage}
+            />
           ) : null}
         </>
       )}

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   ArrowUpRight,
+  BarChart3,
   CalendarDays,
   CreditCard,
   FileText,
@@ -32,7 +33,7 @@ import {
 } from "@/components/ui/sheet";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useAuth } from "@/hooks/use-auth";
-import { dashboardPathForRole, profilePathForRole } from "@/lib/auth-token";
+import { dashboardPathForRole, profilePathForRole, settingsPathForRole } from "@/lib/auth-token";
 import type { Role } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { getInitials } from "@/utils/get-initials";
@@ -46,27 +47,31 @@ type NavItem = {
 const NAV_BY_ROLE: Record<Role, NavItem[]> = {
   CUSTOMER: [
     { href: "/dashboard/customer", label: "Overview", icon: LayoutDashboard },
-    { href: "/dashboard/customer/bookings", label: "Bookings", icon: CalendarDays },
+    { href: "/dashboard/customer/bookings", label: "My Bookings", icon: CalendarDays },
     { href: "/dashboard/customer/payments", label: "Payments", icon: CreditCard },
     { href: "/dashboard/customer/reviews", label: "Reviews", icon: Star },
     { href: "/dashboard/customer/profile", label: "Profile", icon: UserRound },
+    { href: "/dashboard/customer/settings", label: "Settings", icon: Settings2 },
   ],
   TECHNICIAN: [
     { href: "/dashboard/technician", label: "Overview", icon: LayoutDashboard },
     { href: "/dashboard/technician/bookings", label: "Bookings", icon: CalendarDays },
-    { href: "/dashboard/technician/services", label: "Services", icon: Wrench },
+    { href: "/dashboard/technician/services", label: "My Services", icon: Wrench },
     { href: "/dashboard/technician/availability", label: "Availability", icon: CalendarDays },
-    { href: "/dashboard/technician/profile", label: "Profile", icon: Settings2 },
+    { href: "/dashboard/technician/profile", label: "Profile", icon: UserRound },
+    { href: "/dashboard/technician/settings", label: "Settings", icon: Settings2 },
   ],
   ADMIN: [
     { href: "/dashboard/admin", label: "Overview", icon: LayoutDashboard },
     { href: "/dashboard/admin/users", label: "Manage Users", icon: Users },
     { href: "/dashboard/admin/bookings", label: "Manage Bookings", icon: CalendarDays },
+    { href: "/dashboard/admin/analytics", label: "Analytics", icon: BarChart3 },
     { href: "/dashboard/admin/categories", label: "Categories", icon: FolderTree },
     { href: "/dashboard/admin/services", label: "Services", icon: Wrench },
     { href: "/dashboard/admin/contact", label: "Contact Messages", icon: Mail },
     { href: "/dashboard/admin/blog", label: "Blog Posts", icon: FileText },
     { href: "/dashboard/admin/profile", label: "Profile", icon: UserRound },
+    { href: "/dashboard/admin/settings", label: "Settings", icon: Settings2 },
   ],
 };
 
@@ -272,6 +277,7 @@ export function DashboardTopbar() {
               role={role}
               dashboardHref={dashboardPathForRole(role)}
               profileHref={profilePathForRole(role)}
+              settingsHref={settingsPathForRole(role)}
               onLogout={logout}
             />
           ) : null}

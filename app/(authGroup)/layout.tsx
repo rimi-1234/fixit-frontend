@@ -34,7 +34,14 @@ export default function AuthLayout({
         </main>
       </div>
 
-      <aside className="relative hidden w-[46%] shrink-0 bg-primary lg:flex lg:flex-col lg:justify-end">
+      <aside className="relative hidden w-[46%] shrink-0 overflow-hidden bg-primary lg:flex lg:flex-col lg:justify-end">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&w=1600&q=80"
+          alt="Technician completing a home repair"
+          className="absolute inset-0 size-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-primary via-primary/75 to-primary/25" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,oklch(1_0_0/0.18),transparent_55%)]" />
         <div className="relative space-y-5 p-10 text-primary-foreground xl:p-12">
           <p className="text-2xl font-semibold tracking-tight">FixItNow</p>

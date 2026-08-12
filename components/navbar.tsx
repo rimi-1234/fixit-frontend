@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/sheet";
 import { NavUserMenu } from "@/components/nav-user-menu";
 import { useAuth } from "@/hooks/use-auth";
-import { dashboardPathForRole, profilePathForRole } from "@/lib/auth-token";
+import { dashboardPathForRole, profilePathForRole, settingsPathForRole } from "@/lib/auth-token";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 const PUBLIC_NAV_LINKS = [
@@ -44,6 +44,7 @@ export function Navbar() {
   const { isAuthenticated, isHydrated, role, user, logout } = useAuth();
   const dashboardHref = role ? dashboardPathForRole(role) : "/login";
   const profileHref = role ? profilePathForRole(role) : "/login";
+  const settingsHref = role ? settingsPathForRole(role) : "/login";
   const activeId = activeNavId(pathname);
 
   const navLinks =
@@ -105,6 +106,7 @@ export function Navbar() {
               role={role}
               dashboardHref={dashboardHref}
               profileHref={profileHref}
+              settingsHref={settingsHref}
               onLogout={logout}
             />
           ) : (
@@ -132,6 +134,7 @@ export function Navbar() {
               role={role}
               dashboardHref={dashboardHref}
               profileHref={profileHref}
+              settingsHref={settingsHref}
               onLogout={logout}
             />
           ) : null}
@@ -196,6 +199,13 @@ export function Navbar() {
                       className={buttonVariants({ variant: "outline" })}
                     >
                       Profile
+                    </SheetClose>
+                    <SheetClose
+                      nativeButton={false}
+                      render={<Link href={settingsHref} />}
+                      className={buttonVariants({ variant: "outline" })}
+                    >
+                      Settings
                     </SheetClose>
                     <Button variant="outline" onClick={logout}>
                       Log out

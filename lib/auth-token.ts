@@ -110,3 +110,15 @@ export function profilePathForRole(role: Role): string {
       return "/dashboard/customer/profile";
   }
 }
+
+export function settingsPathForRole(role: Role): string {
+  switch (role) {
+    case "TECHNICIAN":
+      return "/dashboard/technician/settings";
+    case "ADMIN":
+      return "/dashboard/admin/settings";
+    case "CUSTOMER":
+    default:
+      return "/dashboard/customer/settings";
+  }
+}

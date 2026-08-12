@@ -7,6 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { ExternalLink, Loader2 } from "lucide-react";
 
+import { AccountProfileForm } from "@/app/(dashboardGroup)/dashboard/_components/account-profile-form";
 import { TechnicianAvatarPicker } from "@/components/technician-avatar-picker";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
@@ -20,7 +21,7 @@ import {
   useUpdateTechnicianProfile,
 } from "@/hooks/use-technicians";
 import { applyApiFieldErrors } from "@/utils/apply-api-field-errors";
-import { TECHNICIAN_AVATAR_PRESETS } from "@/utils/technician-images";
+import { TECHNICIAN_AVATAR_PRESETS, normalizeAvatarPath } from "@/utils/technician-images";
 
 const profileSchema = z.object({
   skillsText: z
@@ -107,7 +108,9 @@ export function TechnicianProfileForm() {
       hourlyRate: String(profile?.hourlyRate ?? ""),
       location: profile?.location ?? "",
       bio: profile?.bio ?? "",
-      imageUrl: profile?.imageUrl ?? TECHNICIAN_AVATAR_PRESETS[0].url,
+      imageUrl: profile?.imageUrl
+        ? normalizeAvatarPath(profile.imageUrl)
+        : TECHNICIAN_AVATAR_PRESETS[0].url,
     });
   }, [profile, technician, reset]);
 
@@ -208,6 +211,10 @@ export function TechnicianProfileForm() {
             {technician.reviewCount === 1 ? "" : "s"}
           </p>
         ) : null}
+      </div>
+
+      <div className="rounded-2xl border border-border/60 bg-card p-6 shadow-sm">
+        <AccountProfileForm title="Account information" />
       </div>
 
       <form onSubmit={onSubmit} className="space-y-5" noValidate>

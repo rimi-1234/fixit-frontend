@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { ChevronDown, LayoutDashboard, LogOut, User, UserRound } from "lucide-react";
+import { ChevronDown, LayoutDashboard, LogOut, Settings2, User, UserRound } from "lucide-react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -46,6 +46,7 @@ export function NavUserMenu({
   role,
   dashboardHref,
   profileHref,
+  settingsHref,
   onLogout,
   className,
 }: {
@@ -53,6 +54,7 @@ export function NavUserMenu({
   role: Role | null;
   dashboardHref: string;
   profileHref: string;
+  settingsHref?: string;
   onLogout: () => void;
   className?: string;
 }) {
@@ -136,6 +138,18 @@ export function NavUserMenu({
             </span>
             Profile
           </DropdownMenuItem>
+
+          {settingsHref ? (
+            <DropdownMenuItem
+              className="cursor-pointer gap-2.5 rounded-xl px-2.5 py-2.5 text-sm"
+              onClick={() => router.push(settingsHref)}
+            >
+              <span className="inline-flex size-7 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+                <Settings2 aria-hidden="true" className="size-3.5" />
+              </span>
+              Settings
+            </DropdownMenuItem>
+          ) : null}
 
           <DropdownMenuSeparator className="my-1" />
 

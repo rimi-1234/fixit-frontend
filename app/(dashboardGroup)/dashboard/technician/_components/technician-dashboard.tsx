@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo, useState } from "react";
 import {
   Banknote,
   CalendarClock,
@@ -8,16 +9,43 @@ import {
   Clock3,
   Inbox,
   Settings2,
+  Star,
   Wrench,
 } from "lucide-react";
 
+import {
+  ChartCard,
+  StatusPieChart,
+  TrendLineChart,
+  WeeklyBarChart,
+  last7DaysCounts,
+  last7DaysSums,
+  statusBreakdown,
+} from "@/app/(dashboardGroup)/dashboard/_components/dashboard-charts";
+import {
+  BOOKING_STATUS_FILTERS,
+  FilterBar,
+  FilterSearch,
+  FilterSelect,
+  filterBookings,
+} from "@/app/(dashboardGroup)/dashboard/_components/dashboard-filters";
 import { StatTile } from "@/app/(dashboardGroup)/dashboard/_components/stat-tile";
 import { BookingStatusBadge } from "@/components/booking-status-badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
+import { PaginationBar } from "@/components/pagination-bar";
 import { RevealGroup, RevealItem } from "@/components/motion/reveal";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useAuth } from "@/hooks/use-auth";
+import { usePagination } from "@/hooks/use-pagination";
 import { useTechnician, useTechnicianBookings } from "@/hooks/use-technicians";
 import type { Booking } from "@/lib/types";
 import { formatCurrency } from "@/utils/format-currency";
@@ -51,6 +79,36 @@ export function TechnicianDashboard() {
     .filter((b) => b.payment?.status === "COMPLETED")
     .reduce((sum, b) => sum + (b.payment?.amount ?? 0), 0);
 
+  const weekData = last7DaysCounts(list);
+  const earningsTrend = last7DaysSums(
+    list.map((b) => ({
+      createdAt: b.createdAt,
+      paidAt: b.payment?.paidAt,
+      amount: b.payment?.amount,
+      status: b.payment?.status,
+    }))
+  );
+  const statusData = statusBreakdown(list);
+
+  const jobs = useMemo(
+    () =>
+      list
+        .slice()
+        .sort(
+          (a, b) =>
+            new Date(b.scheduledTime).getTime() -
+            new Date(a.scheduledTime).getTime()
+        ),
+    [list]
+  );
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("");
+  const filteredJobs = useMemo(
+    () => filterBookings(jobs, { search, status }),
+    [jobs, search, status]
+  );
+  const { page, setPage, totalPages, paged } = usePagination(filteredJobs, 8);
+
   const techProfile = profile?.technicianProfile;
   const serviceCount = profile?.services?.length ?? 0;
   const needsProfile = !techProfile?.skills?.length || !techProfile.location;
@@ -58,7 +116,7 @@ export function TechnicianDashboard() {
   const needsServices = serviceCount === 0;
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8">
+    <div className="mx-auto max-w-6xl space-y-8">
       <div className="space-y-1">
         <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
           Technician dashboard
@@ -94,6 +152,64 @@ export function TechnicianDashboard() {
           </>
         )}
       </RevealGroup>
+
+      <RevealGroup as="div" className="grid gap-3 sm:grid-cols-2">
+        {bookingsLoading || profileLoading ? (
+          Array.from({ length: 2 }).map((_, i) => (
+            <Skeleton key={i} className="h-16" />
+          ))
+        ) : (
+          <>
+            <RevealItem as="div">
+              <StatTile
+                label="Completed jobs"
+                value={completed.length}
+                icon={ClipboardList}
+              />
+            </RevealItem>
+            <RevealItem as="div">
+              <StatTile
+                label="Average rating"
+                value={
+                  profile?.averageRating
+                    ? profile.averageRating.toFixed(1)
+                    : "—"
+                }
+                hint={
+                  profile?.reviewCount
+                    ? `${profile.reviewCount} review${profile.reviewCount === 1 ? "" : "s"}`
+                    : "No reviews yet"
+                }
+                icon={Star}
+              />
+            </RevealItem>
+          </>
+        )}
+      </RevealGroup>
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        <ChartCard title="Jobs — last 7 days">
+          {bookingsLoading ? (
+            <Skeleton className="h-[220px] w-full rounded-xl" />
+          ) : (
+            <WeeklyBarChart data={weekData} label="Jobs" />
+          )}
+        </ChartCard>
+        <ChartCard title="Earnings — last 7 days">
+          {bookingsLoading ? (
+            <Skeleton className="h-[220px] w-full rounded-xl" />
+          ) : (
+            <TrendLineChart data={earningsTrend} label="Earnings" />
+          )}
+        </ChartCard>
+        <ChartCard title="Job status">
+          {bookingsLoading ? (
+            <Skeleton className="h-[220px] w-full rounded-xl" />
+          ) : (
+            <StatusPieChart data={statusData} />
+          )}
+        </ChartCard>
+      </div>
 
       {(needsProfile || needsAvailability || needsServices) && !profileLoading ? (
         <section className="space-y-3 border-y border-border/60 py-5">
@@ -153,11 +269,9 @@ export function TechnicianDashboard() {
       <section className="space-y-4">
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div className="space-y-1">
-            <h2 className="text-lg font-semibold tracking-tight">
-              Pending requests
-            </h2>
+            <h2 className="text-lg font-semibold tracking-tight">All jobs</h2>
             <p className="text-sm text-muted-foreground">
-              Accept or decline from the bookings page.
+              Requests, upcoming work, and completed jobs from your bookings API.
             </p>
           </div>
           <Button
@@ -186,116 +300,87 @@ export function TechnicianDashboard() {
               </Button>
             }
           />
-        ) : pending.length === 0 ? (
+        ) : jobs.length === 0 ? (
           <EmptyState
             icon={Inbox}
-            title="No pending requests"
+            title="No jobs yet"
             description="New booking requests will show up here."
           />
         ) : (
-          <RevealGroup as="ul" className="divide-y divide-border/60">
-            {pending.map((booking) => (
-              <RevealItem
-                key={booking.id}
-                as="li"
-                className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div className="min-w-0 space-y-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="font-medium tracking-tight">
+          <>
+            <FilterBar>
+              <FilterSearch
+                id="tech-overview-search"
+                value={search}
+                onChange={(value) => {
+                  setSearch(value);
+                  setPage(1);
+                }}
+                placeholder="Service or customer…"
+              />
+              <FilterSelect
+                id="tech-overview-status"
+                label="Status"
+                value={status}
+                onChange={(value) => {
+                  setStatus(value);
+                  setPage(1);
+                }}
+                options={BOOKING_STATUS_FILTERS}
+              />
+            </FilterBar>
+            {filteredJobs.length === 0 ? (
+              <EmptyState
+                icon={Inbox}
+                title="No matching jobs"
+                description="Try another search or status filter."
+              />
+            ) : (
+          <div className="rounded-2xl border border-border/60 bg-card shadow-sm">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Service</TableHead>
+                  <TableHead>Customer</TableHead>
+                  <TableHead>Scheduled</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Amount</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paged.map((booking) => (
+                  <TableRow key={booking.id}>
+                    <TableCell className="font-medium">
                       {booking.service?.name ?? "Service"}
-                    </p>
-                    <BookingStatusBadge status={booking.status} />
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    {formatDateTime(booking.scheduledTime)}
-                    {booking.customer?.email
-                      ? ` · ${booking.customer.email}`
-                      : ""}
-                  </p>
-                  {typeof booking.service?.price === "number" ? (
-                    <p className="text-sm text-muted-foreground">
-                      {formatCurrency(booking.service.price)}
-                    </p>
-                  ) : null}
-                </div>
-                <Button
-                  size="sm"
-                  nativeButton={false}
-                  render={<Link href="/dashboard/technician/bookings" />}
-                >
-                  Review
-                </Button>
-              </RevealItem>
-            ))}
-          </RevealGroup>
-        )}
-      </section>
-
-      <section className="space-y-4">
-        <div className="space-y-1">
-          <h2 className="text-lg font-semibold tracking-tight">Upcoming jobs</h2>
-          <p className="text-sm text-muted-foreground">
-            Accepted, paid, and in-progress work sorted by schedule.
-          </p>
-        </div>
-
-        {bookingsLoading ? (
-          <div className="space-y-3">
-            {Array.from({ length: 3 }).map((_, i) => (
-              <Skeleton key={i} className="h-16 w-full rounded-xl" />
-            ))}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {booking.customer?.email ?? "—"}
+                    </TableCell>
+                    <TableCell>{formatDateTime(booking.scheduledTime)}</TableCell>
+                    <TableCell>
+                      <BookingStatusBadge status={booking.status} />
+                    </TableCell>
+                    <TableCell className="text-right font-medium">
+                      {typeof booking.service?.price === "number"
+                        ? formatCurrency(booking.service.price)
+                        : "—"}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            <div className="px-4 pb-4">
+              <PaginationBar
+                page={page}
+                totalPages={totalPages}
+                onPageChange={setPage}
+              />
+            </div>
           </div>
-        ) : upcoming.length === 0 ? (
-          <EmptyState
-            icon={ClipboardList}
-            title="No upcoming jobs"
-            description="Accepted bookings appear here once customers request work."
-          />
-        ) : (
-          <RevealGroup as="ul" className="divide-y divide-border/60">
-            {upcoming.slice(0, 6).map((booking) => (
-              <RevealItem
-                key={booking.id}
-                as="li"
-                className="flex flex-col gap-2 py-4 sm:flex-row sm:items-center sm:justify-between"
-              >
-                <div className="min-w-0 space-y-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <p className="font-medium tracking-tight">
-                      {booking.service?.name ?? "Service"}
-                    </p>
-                    <BookingStatusBadge status={booking.status} />
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    {formatDateTime(booking.scheduledTime)}
-                    {booking.customer?.email
-                      ? ` · ${booking.customer.email}`
-                      : ""}
-                  </p>
-                </div>
-                {typeof booking.service?.price === "number" ? (
-                  <p className="text-sm font-medium">
-                    {formatCurrency(booking.service.price)}
-                  </p>
-                ) : null}
-              </RevealItem>
-            ))}
-          </RevealGroup>
+            )}
+          </>
         )}
       </section>
-
-      {!bookingsLoading && completed.length > 0 ? (
-        <p className="text-sm text-muted-foreground">
-          {completed.length} completed job{completed.length === 1 ? "" : "s"}
-          {profile?.averageRating
-            ? ` · ${profile.averageRating.toFixed(1)} average rating`
-            : ""}
-          {profile?.reviewCount
-            ? ` · ${profile.reviewCount} review${profile.reviewCount === 1 ? "" : "s"}`
-            : ""}
-        </p>
-      ) : null}
     </div>
   );
 }

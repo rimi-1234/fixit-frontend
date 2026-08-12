@@ -1,15 +1,30 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
+import {
+  BOOKING_STATUS_FILTERS,
+  FilterBar,
+  FilterSearch,
+  FilterSelect,
+  filterBookings,
+} from "@/app/(dashboardGroup)/dashboard/_components/dashboard-filters";
 import { ConfirmDialog } from "@/components/confirm-dialog";
 import { BookingStatusBadge } from "@/components/booking-status-badge";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
 import { PaginationBar } from "@/components/pagination-bar";
-import { Reveal, RevealGroup, RevealItem } from "@/components/motion/reveal";
+import { Reveal } from "@/components/motion/reveal";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useCancelBooking, useMyBookings } from "@/hooks/use-bookings";
 import { useBookingStatusToasts } from "@/hooks/use-booking-status-toasts";
 import { usePagination } from "@/hooks/use-pagination";
@@ -37,10 +52,20 @@ export function CustomerBookingsPage() {
   useBookingStatusToasts(true);
   const { data, isLoading, isError, refetch } = useMyBookings();
   const cancelBooking = useCancelBooking();
-  const list = data ?? [];
-  const { page, setPage, totalPages, paged } = usePagination(list, 8);
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("");
   const [cancelTarget, setCancelTarget] = useState<Booking | null>(null);
   const [cancelling, setCancelling] = useState(false);
+
+  const list = useMemo(
+    () =>
+      filterBookings(data ?? [], { search, status }).sort(
+        (a, b) =>
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      ),
+    [data, search, status]
+  );
+  const { page, setPage, totalPages, paged } = usePagination(list, 8);
 
   async function handleCancel() {
     if (!cancelTarget) return;
@@ -56,7 +81,7 @@ export function CustomerBookingsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl space-y-6">
+    <div className="mx-auto max-w-6xl space-y-6">
       <ConfirmDialog
         open={Boolean(cancelTarget)}
         onOpenChange={(open) => {
@@ -93,6 +118,28 @@ export function CustomerBookingsPage() {
         </Button>
       </Reveal>
 
+      <FilterBar>
+        <FilterSearch
+          id="customer-bookings-search"
+          value={search}
+          onChange={(value) => {
+            setSearch(value);
+            setPage(1);
+          }}
+          placeholder="Service or technician…"
+        />
+        <FilterSelect
+          id="customer-bookings-status"
+          label="Status"
+          value={status}
+          onChange={(value) => {
+            setStatus(value);
+            setPage(1);
+          }}
+          options={BOOKING_STATUS_FILTERS}
+        />
+      </FilterBar>
+
       <Reveal className="rounded-2xl border border-border/60 bg-card p-5 shadow-sm sm:p-6">
         {isLoading ? (
           <div className="space-y-3">
@@ -110,7 +157,7 @@ export function CustomerBookingsPage() {
               </Button>
             }
           />
-        ) : list.length === 0 ? (
+        ) : (data ?? []).length === 0 ? (
           <EmptyState
             title="No bookings yet"
             description="Browse services and request a technician for a time slot."
@@ -120,62 +167,77 @@ export function CustomerBookingsPage() {
               </Button>
             }
           />
+        ) : list.length === 0 ? (
+          <EmptyState
+            title="No matching bookings"
+            description="Try another search or status filter."
+          />
         ) : (
           <>
-            <RevealGroup as="ul" animate="visible" className="divide-y divide-border/60">
-              {paged.map((booking) => {
-                const action = bookingAction(booking);
-                const canCancel = CANCELLABLE.includes(booking.status);
-                return (
-                  <RevealItem
-                    key={booking.id}
-                    as="li"
-                    className="flex flex-col gap-3 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between"
-                  >
-                    <div className="min-w-0 space-y-1">
-                      <div className="flex flex-wrap items-center gap-2">
-                        <p className="font-medium tracking-tight">
-                          {booking.service?.name ?? "Service"}
-                        </p>
-                        <BookingStatusBadge status={booking.status} />
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        {formatDateTime(booking.scheduledTime)}
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Service</TableHead>
+                  <TableHead>Technician</TableHead>
+                  <TableHead>Scheduled</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Price</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paged.map((booking) => {
+                  const action = bookingAction(booking);
+                  const canCancel = CANCELLABLE.includes(booking.status);
+                  return (
+                    <TableRow key={booking.id}>
+                      <TableCell className="font-medium">
+                        {booking.service?.name ?? "Service"}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
                         {booking.technician?.email
-                          ? ` · ${displayNameFromEmail(booking.technician.email)}`
-                          : ""}
-                      </p>
-                      {typeof booking.service?.price === "number" ? (
-                        <p className="text-sm font-medium">
-                          {formatCurrency(booking.service.price)}
-                        </p>
-                      ) : null}
-                    </div>
-                    <div className="flex flex-wrap gap-2">
-                      {canCancel ? (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="rounded-full"
-                          onClick={() => setCancelTarget(booking)}
-                        >
-                          Cancel
-                        </Button>
-                      ) : null}
-                      <Button
-                        variant={booking.status === "ACCEPTED" ? "default" : "outline"}
-                        size="sm"
-                        className="rounded-full"
-                        nativeButton={false}
-                        render={<Link href={action.href} />}
-                      >
-                        {action.label}
-                      </Button>
-                    </div>
-                  </RevealItem>
-                );
-              })}
-            </RevealGroup>
+                          ? displayNameFromEmail(booking.technician.email)
+                          : "—"}
+                      </TableCell>
+                      <TableCell>{formatDateTime(booking.scheduledTime)}</TableCell>
+                      <TableCell>
+                        <BookingStatusBadge status={booking.status} />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {typeof booking.service?.price === "number"
+                          ? formatCurrency(booking.service.price)
+                          : "—"}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          {canCancel ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="rounded-full"
+                              onClick={() => setCancelTarget(booking)}
+                            >
+                              Cancel
+                            </Button>
+                          ) : null}
+                          <Button
+                            variant={
+                              booking.status === "ACCEPTED" ? "default" : "outline"
+                            }
+                            size="sm"
+                            className="rounded-full"
+                            nativeButton={false}
+                            render={<Link href={action.href} />}
+                          >
+                            {action.label}
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
             <PaginationBar page={page} totalPages={totalPages} onPageChange={setPage} />
           </>
         )}

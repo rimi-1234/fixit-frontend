@@ -1,14 +1,13 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { BadgeCheck, Star } from "lucide-react";
 
 import { displayNameFromEmail } from "@/utils/display-name";
 import { formatCurrency } from "@/utils/format-currency";
 import type { TechnicianSummary } from "@/lib/types";
-import { shouldUnoptimizeImage } from "@/utils/image-src";
 import { technicianImageUrl } from "@/utils/technician-images";
+import { SafePhoto } from "@/components/safe-photo";
 
 export function TechnicianCard({
   tech,
@@ -24,13 +23,9 @@ export function TechnicianCard({
   return (
     <Link href={`/technicians/${tech.id}`} className="group block space-y-3">
       <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-muted">
-        <Image
+        <SafePhoto
           src={photo}
-          alt=""
-          fill
-          sizes="(min-width: 1024px) 30vw, (min-width: 640px) 45vw, 90vw"
-          className="object-cover transition-transform duration-500 group-hover:scale-105"
-          unoptimized={shouldUnoptimizeImage(photo)}
+          className="absolute inset-0 size-full transition-transform duration-500 group-hover:scale-105"
         />
       </div>
       <div className="space-y-1">

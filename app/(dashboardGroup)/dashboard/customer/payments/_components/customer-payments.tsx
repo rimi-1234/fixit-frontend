@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useMemo, useState } from "react";
 import {
   ArrowRight,
   CreditCard,
@@ -8,6 +9,13 @@ import {
   Wallet,
 } from "lucide-react";
 
+import {
+  FilterBar,
+  FilterSearch,
+  FilterSelect,
+  PAYMENT_STATUS_FILTERS,
+  filterPayments,
+} from "@/app/(dashboardGroup)/dashboard/_components/dashboard-filters";
 import { StatTile } from "@/app/(dashboardGroup)/dashboard/_components/stat-tile";
 import { PaymentStatusBadge } from "@/components/payment-status-badge";
 import { Button } from "@/components/ui/button";
@@ -19,12 +27,19 @@ import {
   RevealItem,
 } from "@/components/motion/reveal";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useMyPayments } from "@/hooks/use-payments";
 import { usePagination } from "@/hooks/use-pagination";
 import type { PaymentProvider } from "@/lib/types";
 import { formatCurrency } from "@/utils/format-currency";
 import { formatDateTime } from "@/utils/format-date";
-import { cn } from "@/lib/utils";
 
 function providerLabel(provider?: PaymentProvider | string | null) {
   if (!provider) return "Checkout";
@@ -35,11 +50,17 @@ function providerLabel(provider?: PaymentProvider | string | null) {
 
 export function CustomerPaymentsPage() {
   const { data, isLoading, isError, refetch } = useMyPayments();
-  const list = data ?? [];
+  const [search, setSearch] = useState("");
+  const [status, setStatus] = useState("");
+  const all = data ?? [];
+  const list = useMemo(
+    () => filterPayments(all, { search, status }),
+    [all, search, status]
+  );
   const { page, setPage, totalPages, paged } = usePagination(list, 8);
 
-  const completed = list.filter((p) => p.status === "COMPLETED");
-  const pending = list.filter((p) => p.status === "PENDING");
+  const completed = all.filter((p) => p.status === "COMPLETED");
+  const pending = all.filter((p) => p.status === "PENDING");
   const spent = completed.reduce((sum, p) => sum + (p.amount || 0), 0);
 
   return (
@@ -110,21 +131,42 @@ export function CustomerPaymentsPage() {
       </RevealGroup>
 
       <Reveal className="rounded-[1.5rem] border border-border/60 bg-card/80 p-5 shadow-sm sm:p-6">
-        <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+        <div className="mb-5 space-y-4">
           <div className="space-y-1">
             <h3 className="text-base font-semibold tracking-tight sm:text-lg">
               Payment history
             </h3>
             <p className="text-sm text-muted-foreground">
-              Newest activity first.
+              Filter by status or search transaction details.
             </p>
           </div>
+          <FilterBar>
+            <FilterSearch
+              id="payments-search"
+              value={search}
+              onChange={(value) => {
+                setSearch(value);
+                setPage(1);
+              }}
+              placeholder="Transaction, provider, amount…"
+            />
+            <FilterSelect
+              id="payments-status"
+              label="Status"
+              value={status}
+              onChange={(value) => {
+                setStatus(value);
+                setPage(1);
+              }}
+              options={PAYMENT_STATUS_FILTERS}
+            />
+          </FilterBar>
         </div>
 
         {isLoading ? (
           <div className="space-y-3">
             {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="h-24 w-full rounded-2xl" />
+              <Skeleton key={i} className="h-16 w-full rounded-2xl" />
             ))}
           </div>
         ) : isError ? (
@@ -138,7 +180,7 @@ export function CustomerPaymentsPage() {
               </Button>
             }
           />
-        ) : list.length === 0 ? (
+        ) : all.length === 0 ? (
           <EmptyState
             icon={CreditCard}
             title="No payments yet"
@@ -153,66 +195,60 @@ export function CustomerPaymentsPage() {
               </Button>
             }
           />
+        ) : list.length === 0 ? (
+          <EmptyState
+            icon={CreditCard}
+            title="No matching payments"
+            description="Try another search or status filter."
+          />
         ) : (
           <>
-            <RevealGroup
-              as="ul"
-              animate="visible"
-              className="grid gap-3"
-            >
-            {paged.map((payment) => (
-              <RevealItem
-                key={payment.id}
-                as="li"
-                whileHover={{ y: -3 }}
-                transition={{ type: "spring", stiffness: 320, damping: 24 }}
-                className={cn(
-                  "group flex flex-col gap-4 rounded-2xl border border-border/60 bg-background/60 p-4 transition-colors hover:border-primary/25 hover:bg-accent/30 sm:flex-row sm:items-center sm:justify-between sm:p-5"
-                )}
-              >
-                <div className="flex min-w-0 items-start gap-4">
-                  <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary transition-colors group-hover:bg-primary/15">
-                    <CreditCard aria-hidden="true" className="size-4" />
-                  </span>
-                  <div className="min-w-0 space-y-2">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <p className="text-lg font-semibold tracking-tight">
-                        {formatCurrency(payment.amount)}
-                      </p>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Amount</TableHead>
+                  <TableHead>Provider</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Transaction</TableHead>
+                  <TableHead className="text-right">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paged.map((payment) => (
+                  <TableRow key={payment.id}>
+                    <TableCell className="font-semibold">
+                      {formatCurrency(payment.amount)}
+                    </TableCell>
+                    <TableCell>{providerLabel(payment.provider)}</TableCell>
+                    <TableCell>
                       <PaymentStatusBadge status={payment.status} />
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      {providerLabel(payment.provider)}
-                      {" · "}
-                      {payment.paidAt
-                        ? formatDateTime(payment.paidAt)
-                        : formatDateTime(payment.createdAt)}
-                    </p>
-                    {payment.transactionId ? (
-                      <p className="truncate font-mono text-[11px] text-muted-foreground/80">
-                        {payment.transactionId}
-                      </p>
-                    ) : null}
-                  </div>
-                </div>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="rounded-full"
-                  nativeButton={false}
-                  render={
-                    <Link
-                      href={`/dashboard/customer/bookings/${payment.bookingId}`}
-                    />
-                  }
-                >
-                  View booking
-                  <ArrowRight aria-hidden="true" />
-                </Button>
-              </RevealItem>
-            ))}
-          </RevealGroup>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {formatDateTime(payment.paidAt || payment.createdAt)}
+                    </TableCell>
+                    <TableCell className="max-w-[10rem] truncate font-mono text-xs text-muted-foreground">
+                      {payment.transactionId || "—"}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="rounded-full"
+                        nativeButton={false}
+                        render={
+                          <Link
+                            href={`/dashboard/customer/bookings/${payment.bookingId}`}
+                          />
+                        }
+                      >
+                        View booking
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
             <PaginationBar page={page} totalPages={totalPages} onPageChange={setPage} />
           </>
         )}

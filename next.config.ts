@@ -9,6 +9,11 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // Turbopack's on-disk cache compaction blocks the dev server for minutes on this D: drive,
+  // which makes client navigations fail with "Failed to fetch RSC payload".
+  experimental: {
+    turbopackFileSystemCacheForDev: false,
+  },
 };
 
 export default nextConfig;

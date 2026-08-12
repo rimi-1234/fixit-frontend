@@ -2,6 +2,7 @@
 export function shouldUnoptimizeImage(src: string) {
   if (!src) return true;
   if (src.startsWith("data:")) return true;
+  if (src.endsWith(".svg")) return true;
   if (src.startsWith("/")) return false;
   try {
     const { hostname } = new URL(src);

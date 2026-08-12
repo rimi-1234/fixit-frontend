@@ -1,13 +1,12 @@
 "use client";
 
-import Image from "next/image";
 import { ImagePlus } from "lucide-react";
 
 import { OptimizedImageUpload } from "@/components/optimized-image-upload";
+import { SafePhoto } from "@/components/safe-photo";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
-import { shouldUnoptimizeImage } from "@/utils/image-src";
 import { TECHNICIAN_AVATAR_PRESETS } from "@/utils/technician-images";
 
 export function TechnicianAvatarPicker({
@@ -28,14 +27,7 @@ export function TechnicianAvatarPicker({
       <Label>Profile photo</Label>
       <div className="flex items-center gap-4">
         <div className="relative size-20 shrink-0 overflow-hidden rounded-full bg-muted ring-4 ring-background">
-          <Image
-            src={preview}
-            alt=""
-            fill
-            sizes="80px"
-            className="object-cover"
-            unoptimized={shouldUnoptimizeImage(preview)}
-          />
+          <SafePhoto src={preview} className="size-full" />
         </div>
         <p className="text-sm text-muted-foreground">
           Upload a portrait or pick a preset customers will see on your public
@@ -68,13 +60,7 @@ export function TechnicianAvatarPicker({
               aria-label={preset.label}
               aria-pressed={selected}
             >
-              <Image
-                src={preset.url}
-                alt=""
-                fill
-                sizes="64px"
-                className="object-cover"
-              />
+              <SafePhoto src={preset.url} className="size-full" />
             </button>
           );
         })}
@@ -90,7 +76,7 @@ export function TechnicianAvatarPicker({
           <Input
             id="technician-image-url"
             className="h-11 pl-9"
-            placeholder="https://… or /avatars/avatar-1.png"
+            placeholder="https://… or /avatars/avatar-1.svg"
             value={value}
             onChange={(event) => onChange(event.target.value)}
             aria-invalid={Boolean(error)}
