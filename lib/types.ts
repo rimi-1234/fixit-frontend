@@ -1,5 +1,40 @@
 /** Shared domain + API types — mirror FixItNowPro Prisma models exactly. */
 
+export interface Notification {
+  id: string;
+  userId: string;
+  type: string;
+  title: string;
+  body: string;
+  actionUrl: string | null;
+  readAt: string | null;
+  createdAt: string;
+}
+
+export interface BookingEvent {
+  id: string;
+  bookingId: string;
+  eventType: string;
+  actorId: string | null;
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
+}
+
+export interface FavoriteTechnician {
+  id: string;
+  customerId: string;
+  technicianId: string;
+  createdAt: string;
+  technician?: {
+    id: string;
+    email: string;
+    name: string | null;
+    imageUrl: string | null;
+    technicianProfile: import("./types").TechnicianProfile | null;
+    services: Array<{ id: string; name: string; price: number; categoryId: string }>;
+  };
+}
+
 export type Role = "CUSTOMER" | "TECHNICIAN" | "ADMIN";
 export type UserStatus = "ACTIVE" | "BANNED";
 
@@ -118,13 +153,16 @@ export interface Payment {
 
 export interface Booking {
   id: string;
+  referenceNumber?: string | null;
   customerId: string;
   technicianId: string;
   serviceId: string;
   status: BookingStatus;
   scheduledTime: string;
+  notes?: string | null;
   createdAt: string;
   updatedAt: string;
+  events?: BookingEvent[];
   technician?: {
     id: string;
     email: string;

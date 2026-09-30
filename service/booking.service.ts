@@ -6,6 +6,7 @@ export interface CreateBookingPayload {
   serviceId: string;
   /** ISO 8601 datetime string */
   scheduledTime: string;
+  notes?: string;
 }
 
 export const bookingService = {

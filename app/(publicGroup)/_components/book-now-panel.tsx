@@ -13,6 +13,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/hooks/use-auth";
 import { useCreateBooking } from "@/hooks/use-bookings";
 import type { TechnicianDetail } from "@/lib/types";
@@ -102,6 +103,7 @@ export function BookNowPanel({ technician }: { technician: TechnicianDetail }) {
   const [serviceId, setServiceId] = useState(services[0]?.id ?? "");
   const [date, setDate] = useState(todayInputValue());
   const [slotIso, setSlotIso] = useState("");
+  const [notes, setNotes] = useState("");
 
   const slots = useMemo(
     () =>
@@ -137,8 +139,10 @@ export function BookNowPanel({ technician }: { technician: TechnicianDetail }) {
         technicianId: technician.id,
         serviceId,
         scheduledTime: slotIso,
+        notes: notes.trim() || undefined,
       });
       setSlotIso("");
+      setNotes("");
       setStep(1);
       router.push("/dashboard/customer");
     } catch {
@@ -394,7 +398,40 @@ export function BookNowPanel({ technician }: { technician: TechnicianDetail }) {
                     : selectedSlot?.label ?? "—"}
                 </dd>
               </div>
+              {notes.trim() && (
+                <div className="space-y-0.5 border-t border-border/40 pt-3">
+                  <dt className="text-sm text-muted-foreground">Your notes</dt>
+                  <dd className="text-sm leading-relaxed">{notes.trim()}</dd>
+                </div>
+              )}
             </dl>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="book-notes">
+              Notes for the technician{" "}
+              <span className="font-normal text-muted-foreground">(optional)</span>
+            </Label>
+            <Textarea
+              id="book-notes"
+              placeholder="e.g. access instructions, model number, appliance brand, entry instructions…"
+              rows={3}
+              maxLength={500}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              className="resize-none rounded-xl text-sm"
+            />
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[11px] text-muted-foreground">
+                Help the technician prepare before arriving.
+              </p>
+              <p className={cn(
+                "text-[11px]",
+                notes.length > 450 ? "text-destructive" : "text-muted-foreground"
+              )}>
+                {notes.length}/500
+              </p>
+            </div>
           </div>
 
           <div className="flex gap-2">

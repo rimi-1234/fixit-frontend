@@ -19,6 +19,7 @@ import { NavUserMenu } from "@/components/nav-user-menu";
 import { useAuth } from "@/hooks/use-auth";
 import { dashboardPathForRole, profilePathForRole, settingsPathForRole } from "@/lib/auth-token";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { NotificationBell } from "@/components/notification-bell";
 
 const PUBLIC_NAV_LINKS = [
   { href: "/", label: "Home", id: "home" },
@@ -98,6 +99,7 @@ export function Navbar() {
 
         <div className="hidden items-center gap-2 lg:flex">
           <ThemeToggle />
+          {isHydrated && isAuthenticated && <NotificationBell />}
           {!isHydrated ? (
             <div className="size-9 animate-pulse rounded-full bg-muted" />
           ) : isAuthenticated ? (
@@ -128,6 +130,7 @@ export function Navbar() {
 
         <div className="flex items-center gap-1.5 lg:hidden">
           <ThemeToggle />
+          {isHydrated && isAuthenticated && <NotificationBell />}
           {isHydrated && isAuthenticated ? (
             <NavUserMenu
               user={user}

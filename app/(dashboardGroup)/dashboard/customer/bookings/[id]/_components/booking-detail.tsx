@@ -3,7 +3,18 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Loader2, Star } from "lucide-react";
+import { formatDistanceToNow } from "date-fns";
+import {
+  CheckCircle2,
+  Circle,
+  Clock,
+  Loader2,
+  MessageSquareText,
+  Navigation,
+  Star,
+  XCircle,
+} from "lucide-react";
+import { LiveTrackingMap } from "@/components/live-tracking-map";
 
 import { ReviewForm } from "@/app/(dashboardGroup)/dashboard/customer/_components/review-form";
 import { ConfirmDialog } from "@/components/confirm-dialog";
@@ -12,16 +23,71 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useBooking, useCancelBooking } from "@/hooks/use-bookings";
-import type { BookingStatus } from "@/lib/types";
+import type { BookingEvent, BookingStatus } from "@/lib/types";
+import { cn } from "@/lib/utils";
 import { formatCurrency } from "@/utils/format-currency";
 import { formatDateTime } from "@/utils/format-date";
 import { displayNameFromEmail } from "@/utils/display-name";
 
 const CANCELLABLE: BookingStatus[] = ["REQUESTED", "ACCEPTED", "PAID"];
 
+const EVENT_LABELS: Record<string, string> = {
+  BOOKING_CREATED: "Booking requested",
+  BOOKING_ACCEPTED: "Technician accepted",
+  BOOKING_DECLINED: "Technician declined",
+  BOOKING_CANCELLED: "Booking cancelled",
+  BOOKING_PAID: "Payment completed",
+  BOOKING_IN_PROGRESS: "Work started",
+  BOOKING_COMPLETED: "Work completed",
+};
+
+function eventIcon(eventType: string) {
+  if (eventType.includes("CANCELLED") || eventType.includes("DECLINED")) {
+    return <XCircle className="size-4 text-destructive" />;
+  }
+  if (eventType.includes("COMPLETED")) {
+    return <CheckCircle2 className="size-4 text-primary" />;
+  }
+  if (eventType.includes("PAID") || eventType.includes("PROGRESS")) {
+    return <CheckCircle2 className="size-4 text-emerald-500" />;
+  }
+  return <Circle className="size-4 text-muted-foreground" />;
+}
+
+function BookingTimeline({ events }: { events: BookingEvent[] }) {
+  if (events.length === 0) return null;
+  return (
+    <div className="space-y-3">
+      <h2 className="text-sm font-semibold">Booking timeline</h2>
+      <ol className="relative border-l border-border/60 pl-5 space-y-4">
+        {events.map((event) => (
+          <li key={event.id} className="relative">
+            <span className="absolute -left-[22px] flex items-center justify-center">
+              {eventIcon(event.eventType)}
+            </span>
+            <div>
+              <p className="text-sm font-medium leading-snug">
+                {EVENT_LABELS[event.eventType] ?? event.eventType.replace(/_/g, " ").toLowerCase().replace(/^\w/, (c) => c.toUpperCase())}
+              </p>
+              <p className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
+                <Clock className="size-3" aria-hidden="true" />
+                {formatDistanceToNow(new Date(event.createdAt), { addSuffix: true })}
+              </p>
+            </div>
+          </li>
+        ))}
+      </ol>
+    </div>
+  );
+}
+
 export function BookingDetailView({ bookingId }: { bookingId: string }) {
   const router = useRouter();
-  const { data: booking, isLoading, isError, refetch } = useBooking(bookingId);
+  const { data: booking, isLoading, isError, refetch } = useBooking(bookingId, {
+    // Auto-refresh so the tracking section appears as soon as the technician
+    // updates the status — without requiring a manual page reload.
+    refetchInterval: 20_000,
+  });
   const cancelBooking = useCancelBooking();
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelling, setCancelling] = useState(false);
@@ -111,6 +177,11 @@ export function BookingDetailView({ bookingId }: { bookingId: string }) {
         <p className="text-sm text-muted-foreground">
           Scheduled {formatDateTime(booking.scheduledTime)}
         </p>
+        {booking.referenceNumber && (
+          <p className="text-xs font-mono text-muted-foreground">
+            Ref: {booking.referenceNumber}
+          </p>
+        )}
       </div>
 
       <dl className="space-y-4 divide-y divide-border/60 border-y border-border/60">
@@ -147,6 +218,17 @@ export function BookingDetailView({ bookingId }: { bookingId: string }) {
             <dt className="text-sm text-muted-foreground">Service details</dt>
             <dd className="text-sm leading-relaxed">
               {booking.service.description}
+            </dd>
+          </div>
+        ) : null}
+        {booking.notes ? (
+          <div className="space-y-1.5 py-4">
+            <dt className="flex items-center gap-1.5 text-sm text-muted-foreground">
+              <MessageSquareText className="size-3.5 text-primary/70" aria-hidden="true" />
+              Your notes to the technician
+            </dt>
+            <dd className="rounded-lg border border-border/60 bg-muted/50 px-3 py-2 text-sm leading-relaxed">
+              {booking.notes}
             </dd>
           </div>
         ) : null}
@@ -212,6 +294,45 @@ export function BookingDetailView({ bookingId }: { bookingId: string }) {
           </p>
         ) : null}
       </div>
+
+      {/* Tracking teaser — unlocks after payment */}
+      {booking.status === "ACCEPTED" && (
+        <div className="flex items-center gap-3 rounded-2xl border border-dashed border-border/60 bg-muted/20 px-5 py-4">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-muted">
+            <Navigation className="size-4 text-muted-foreground/60" aria-hidden="true" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium">Live tracking available after payment</p>
+            <p className="text-xs text-muted-foreground">
+              Once you pay, you can track your technician in real time on a live map.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Live technician tracking — shown once paid and until completion */}
+      {(booking.status === "PAID" || booking.status === "IN_PROGRESS") && (
+        <div className="space-y-3 rounded-2xl border border-border/60 bg-card p-5 shadow-sm">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <div className="flex size-7 items-center justify-center rounded-full bg-primary/10">
+                <Navigation className="size-3.5 text-primary" aria-hidden="true" />
+              </div>
+              <h2 className="text-sm font-semibold">Live technician tracking</h2>
+            </div>
+            <span className="text-xs text-muted-foreground">
+              {booking.status === "PAID"
+                ? "Waiting for technician to start"
+                : "Technician is on the way"}
+            </span>
+          </div>
+          <LiveTrackingMap bookingId={booking.id} />
+        </div>
+      )}
+
+      {booking.events && booking.events.length > 0 && (
+        <BookingTimeline events={booking.events} />
+      )}
 
       {canReview ? (
         <ReviewForm

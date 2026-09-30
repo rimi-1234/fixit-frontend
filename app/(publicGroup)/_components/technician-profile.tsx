@@ -12,6 +12,7 @@ import {
 
 import { BookNowPanel } from "@/app/(publicGroup)/_components/book-now-panel";
 import { SiteFooter } from "@/app/(publicGroup)/_components/site-footer";
+import { FavoriteButton } from "@/components/favorite-button";
 import { SafePhoto } from "@/components/safe-photo";
 import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/empty-state";
@@ -107,6 +108,7 @@ export function TechnicianProfileView({ technicianId }: { technicianId: string }
                         <BadgeCheck aria-hidden="true" className="size-4" />
                         Verified
                       </span>
+                      <FavoriteButton technicianId={technicianId} size="md" />
                     </h1>
                     <p className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-sm text-muted-foreground sm:justify-start">
                       <span className="inline-flex items-center gap-1">

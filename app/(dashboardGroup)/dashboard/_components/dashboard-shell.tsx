@@ -9,6 +9,7 @@ import {
   CreditCard,
   FileText,
   FolderTree,
+  Heart,
   LayoutDashboard,
   LogOut,
   Mail,
@@ -48,6 +49,7 @@ const NAV_BY_ROLE: Record<Role, NavItem[]> = {
   CUSTOMER: [
     { href: "/dashboard/customer", label: "Overview", icon: LayoutDashboard },
     { href: "/dashboard/customer/bookings", label: "My Bookings", icon: CalendarDays },
+    { href: "/dashboard/customer/favorites", label: "Favorites", icon: Heart },
     { href: "/dashboard/customer/payments", label: "Payments", icon: CreditCard },
     { href: "/dashboard/customer/reviews", label: "Reviews", icon: Star },
     { href: "/dashboard/customer/profile", label: "Profile", icon: UserRound },
